@@ -1,66 +1,87 @@
-package myftpserver;
+import java.io.*;
+import java.net.*;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
 
-public class MyFtpServer {
-	private static ServerSocket serverSocket;
-	private static Socket clientSocket;
-	private DataInputStream inputStream;
-	private PrintStream outputToClient;
-	private byte[] output;
-	private SocketAddress socketAddress;
-    InetAddress ipAddress;
+public class myftpserver {
+
 
     //default constructor
-    MyFtpServer(){};
+    myftpserver(){
+    };
     
-    public void createServerSocket(int portNumber){
-		try {
-			ipAddress = InetAddress.getLocalHost();
-			socketAddress = new InetSocketAddress(ipAddress, portNumber);
-		} catch (UnknownHostException e1) {
-			System.out.println("Could not get local host");
-		}
-		try{
+    private static void createServerSocket(int portNumber){
+		try(
 			//Open Socket
-			serverSocket = new ServerSocket(portNumber);
-			clientSocket = serverSocket.accept(); 
-			clientSocket.bind(socketAddress);
-			//receive inputStream from client
-			inputStream = new DataInputStream(clientSocket.getInputStream());
-			//output to client
-			outputToClient = new PrintStream(clientSocket.getOutputStream());
-			outputToClient.write(output);
-			
+			ServerSocket serverSocket = new ServerSocket(portNumber);
+			//Wait for connection 
+			Socket clientSocket = serverSocket.accept(); 
+			//Get output from client
+			PrintWriter outputToClient = new PrintWriter (clientSocket.getOutputStream(), true);
+			//Get input from client
+			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			)
+		{
+			String inputFromClientS;
+			while( (inputFromClientS = inputFromClient.readLine()) !=null )
+			{
+				/*
+					For the commands I was thinking we could make individual methods for all of the commands so it would look cleaner
+				*/
+				outputToClient.println(inputFromClientS);
+				if(inputFromClientS.equals("get"))
+				{
+					System.err.println("DEBUG: get command received ");
+				}
+				else if(inputFromClientS.equals( "put"))
+				{
+					System.err.println("DEBUG: put command received ");
+				}
+				else if(inputFromClientS.equals("delete"))
+				{
+					System.err.println("DEBUG: delete command received ");
+				}
+				else if(inputFromClientS.equals( "ls"))
+				{
+					System.err.println("DEBUG: ls command received ");
+				}
+				else if(inputFromClientS.equals( "cd"))
+				{
+					System.err.println("DEBUG: cd command received ");
+				}
+				else if(inputFromClientS.equals( "mkdir"))
+				{
+					System.err.println("DEBUG: mkdir command received ");
+				}
+				else if(inputFromClientS.equals( "pwd"))
+				{
+					System.err.println("DEBUG: pwd command received ");
+				}
+				else if(inputFromClientS.equals( "quit"))
+				{
+					System.err.println("DEBUG: quit command received ");
+				}
 			}
-		catch(Exception e){
-			System.out.println(e);
+			
+			
 		}
-		//close sockets
-		try {
-			outputToClient.close();
-			inputStream.close();
-			serverSocket.close();
-			clientSocket.close();
-		} catch (IOException e) {
-			System.out.print(e);
-		}
+		catch (IOException e) {
+            System.out.println("Exception caught when trying to listen on port " + portNumber + " or listening for a connection");
+            System.out.println(e.getMessage());
+        }
+		
 	}
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		int portNumber = 80;
-		MyFtpServer server = new MyFtpServer();
-		while(true){
-			server.createServerSocket(portNumber);
+		if (args.length != 1)
+       {
+           System.err.println("Usage: java myftpserver <port number>");
+           System.exit(1);
+       }
+       else
+       {
+			int portNumber = Integer.parseInt(args[0]);
+			createServerSocket(portNumber);
 		}
-	}
+}
+
 }
 
