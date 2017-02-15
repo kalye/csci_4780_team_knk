@@ -83,6 +83,7 @@ public class myftp {
         String userInput, serverInput, commands[];
         File fe;
         
+        //Resourse Statements closes all of these objects after the program closes 
         try (
             Socket myftpSocket = new Socket(hostName, portNumber);
             BufferedInputStream isFromServer = new BufferedInputStream(myftpSocket.getInputStream());

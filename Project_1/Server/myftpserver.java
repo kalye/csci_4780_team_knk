@@ -13,10 +13,7 @@ public class myftpserver {
     	boolean success = false;
     	try{
     		File fe = new File(fileName);
-    		if(fe.delete())
-			success = true;
-		else
-			success = false;
+    		success = fe.delete();
     	}
     	catch(SecurityException e )
     	{
