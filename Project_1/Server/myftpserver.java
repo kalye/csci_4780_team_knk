@@ -161,6 +161,8 @@ public class myftpserver {
 				else if(commands[0].equals( "quit"))
 				{
 					System.err.println("DEBUG: quit command received ");
+					clientSocket.close();
+					break;
 
 				}
 				else 
