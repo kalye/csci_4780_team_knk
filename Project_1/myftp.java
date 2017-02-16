@@ -15,14 +15,7 @@ import java.net.*;
 public class myftp {
 
     public myftp(){}
-    public void quit(Socket myftpSocket){
-        try {
-            myftpSocket.close();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            System.out.println("Could not close Socket");
-        }
-    }
+    
     private byte[] convertFileToByteArray(String fileName){
         FileInputStream fis = null;
         BufferedInputStream bis = null;
@@ -90,6 +83,7 @@ public class myftp {
         String userInput, serverInput, commands[];
         File fe;
         
+        //Resourse Statements closes all of these objects after the program closes 
         try (
             Socket myftpSocket = new Socket(hostName, portNumber);
             BufferedInputStream isFromServer = new BufferedInputStream(myftpSocket.getInputStream());
@@ -107,7 +101,6 @@ public class myftp {
             while (true) {
                 userInput = stdInput.readLine(); 
                 outputToServer.println(userInput);
-                //serverInput = inputFromServer.readLine();
                 commands = userInput.split(" ");
                 if(commands[0].equals("get"))
                 {
@@ -133,12 +126,9 @@ public class myftp {
                 }
                 else if(commands[0].equals("quit"))
                 {
-                    System.out.println("Quit Commands Received ");
-                    quit(myftpSocket);
-                    break;
+                    System.err.println("Socket Closed");
+                    System.exit(0);
                 }
-                else
-                    System.out.println(inputFromServer.readLine());
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
