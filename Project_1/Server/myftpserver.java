@@ -1,13 +1,30 @@
-import java.io.*;
-import java.net.*;
-
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class myftpserver {
 	private String inputFromClientS;
 	private String commands[];
+	private String currentWorkingDirectory;
+	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
 
     //default constructor
-    myftpserver(){
+	myftpserver(){
+		currentWorkingDirectory = System.getProperty("user.dir");
     };
     private boolean deleteFileFromServer(String fileName){
     	boolean success = false;
@@ -86,8 +103,7 @@ public class myftpserver {
 
     }
     private String pwd(){
-    	String workingDir = System.getProperty("user.dir");
-    	return workingDir;
+    	return currentWorkingDirectory;
     }
     private void createServerSocket(int portNumber){
     	while(true)
@@ -103,6 +119,8 @@ public class myftpserver {
 			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			//Output to Click with a buffer
 			BufferedOutputStream osToClient = new BufferedOutputStream(clientSocket.getOutputStream());
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+					clientSocket.getOutputStream()));
 			//Input from client as BufferedInputer 
 			BufferedInputStream inBuffFromClient= new BufferedInputStream(clientSocket.getInputStream());
 			)
@@ -111,6 +129,9 @@ public class myftpserver {
 			while(true)
 			{
 				inputFromClientS = inputFromClient.readLine();
+				if(inputFromClientS == null || inputFromClient.equals("")){
+					continue;
+				}
 				commands = inputFromClientS.split(" ");
 				if(commands[0].equals("get"))
 				{
@@ -139,20 +160,22 @@ public class myftpserver {
 				}
 				else if(commands[0].equals( "ls"))
 				{
-					System.err.println("DEBUG: ls command received ");
+					lsCurrentDirectory(writer);
 				}
 				else if(commands[0].equals( "cd"))
 				{
-					System.err.println("DEBUG: cd command received ");
+					changeDirectory(commands[1], clientSocket);
+					
 				}
 				else if(commands[0].equals( "mkdir"))
 				{
-					System.err.println("DEBUG: mkdir command received ");
+					makdeDirectory(commands[1], clientSocket );
 				}
 				else if(commands[0].equals( "pwd"))
 				{
-					System.err.println("DEBUG: pwd command received ");
-					outputToClient.println("Current directory : " + pwd());
+					writer.write("Current directory : " + pwd());
+					writer.newLine();
+					writer.flush();
 					
 				}
 				else if(commands[0].equals( "quit"))
@@ -177,6 +200,77 @@ public class myftpserver {
 		
 	}
 }
+    private void changeDirectory(String inputLine, Socket socket) throws IOException {
+		Path newPath = Paths.get(inputLine);
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                socket.getOutputStream()));
+		if (Files.exists(newPath)) {
+			currentWorkingDirectory = newPath.toAbsolutePath().toString();
+			writer.write("Directory changed to " + currentWorkingDirectory);
+			writer.newLine();
+			writer.flush();
+			return;
+		}
+		writer.write("No such file or directory ");
+		writer.newLine();
+		writer.flush();
+
+	}
+    private void lsCurrentDirectory(BufferedWriter writer) throws IOException {
+		File curDir = new File(currentWorkingDirectory);
+		File[] filesList = curDir.listFiles();
+		try{
+		for (File f : filesList) {
+			if (f.isDirectory()){
+				writer.write(f.getName());
+				writer.newLine();
+				writer.flush();
+				File[] dirFilesList = curDir.listFiles();
+				for (File dirfile : dirFilesList) {
+					if (dirfile.isDirectory()) {
+						writer.write(dirfile.getName());
+						writer.newLine();
+						writer.flush();
+					}
+				}
+			}
+			if (f.isFile()) {
+				writer.write(f.getName());
+				writer.newLine();
+				writer.flush();
+			}
+		}
+		} catch(Exception e){
+			e.printStackTrace();
+			writer.write("Error while listing file in directory " + pwd());
+			writer.newLine();
+			writer.flush();
+			return;
+		}
+		writer.write("list is done successfully.");
+		writer.newLine();
+		writer.flush();
+		System.out.println("ls command is done");
+
+	}
+    private void makdeDirectory(String inputLine, Socket clientSocket) throws IOException {
+    	BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+    			clientSocket.getOutputStream()));
+		try {
+			Path pathToFile = Paths.get(inputLine);
+			if(!pathToFile.isAbsolute()){
+				pathToFile = Paths.get(currentWorkingDirectory, inputLine);
+			}
+			Files.createDirectories(pathToFile);
+			writer.write("directory " + inputLine + " is created.");
+			writer.newLine();
+			writer.flush();
+		} catch (Exception e) {
+			writer.write("error creating directory " + inputLine + ". Error is: " + e.getMessage());
+			writer.newLine();
+			writer.flush();
+		}
+	}
 	public static void main(String[] args) {
 		if (args.length != 1)
        {

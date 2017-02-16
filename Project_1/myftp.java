@@ -13,7 +13,7 @@ import java.io.*;
 import java.net.*;
 
 public class myftp {
-
+	private static final String PROMPT_MSG = "mytftp>";
     public myftp(){}
     
     private byte[] convertFileToByteArray(String fileName){
@@ -93,13 +93,19 @@ public class myftp {
             BufferedReader inputFromServer =
                 new BufferedReader(
                     new InputStreamReader(myftpSocket.getInputStream()));
+        		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+        				myftpSocket.getOutputStream()))
             BufferedReader stdInput =
                 new BufferedReader(
-                    new InputStreamReader(System.in))
+                    new InputStreamReader(System.in));
         ) {
-            
+        	System.out.print(PROMPT_MSG);
             while (true) {
-                userInput = stdInput.readLine(); 
+                userInput = stdInput.readLine();
+                if (userInput == null || "".equals(userInput)) {
+					continue;
+				} 
+                userInput = replacePrompt(userInput);
                 outputToServer.println(userInput);
                 commands = userInput.split(" ");
                 if(commands[0].equals("get"))
@@ -128,7 +134,16 @@ public class myftp {
                 {
                     System.err.println("Socket Closed");
                     System.exit(0);
-                }
+                } else if (userInput.contains("ls")) {
+					lsFileInRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if (userInput.contains("cd")) {
+					cdRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if (userInput.contains("mkdir")) {
+					mkdirRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if(userInput.equals("pwd")){
+					System.out.println(inputFromServer.readLine());
+					System.out.print(PROMPT_MSG);
+				}
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
@@ -139,6 +154,58 @@ public class myftp {
             System.exit(1);
         } 
     }
+	private void lsFileInRemoteServerDirectory(String userInput, BufferedWriter writer,
+			BufferedReader inputFromServer) throws IOException {
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		try{
+			userInput = inputFromServer.readLine();
+			while (userInput != null) {
+					System.out.println(userInput);
+					if(inputFromServer.ready()){
+						userInput = inputFromServer.readLine();
+					} else {
+						break;
+					}
+
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		System.out.print(PROMPT_MSG);
+	}
+	private void waitForServerResponse(BufferedReader inputFromServer) throws IOException {
+		String response = null;
+		while (true) {
+			response = inputFromServer.readLine();
+			if (response == null || "".equals(response)) {
+				continue;
+			} else {
+				break;
+			}
+		}
+		System.out.println(response);
+	}
+	private void cdRemoteServerDirectory(String userInput, BufferedWriter writer, BufferedReader inputFromServer)
+			throws IOException {
+		waitForServerResponse(inputFromServer);
+		System.out.print(PROMPT_MSG);
+	}
+	private void mkdirRemoteServerDirectory(String userInput, BufferedWriter writer,
+			BufferedReader inputFromServer) throws IOException {
+		waitForServerResponse(inputFromServer);
+		System.out.print(PROMPT_MSG);
+
+	}
+	private String replacePrompt(String userInput) {
+		if (userInput != null && userInput.startsWith(PROMPT_MSG)) {
+			userInput = userInput.replace(PROMPT_MSG, "");
+		}
+		return userInput;
+	}
     public static void main(String args[])
     {
         //Making sure correct input is given by the user 
