@@ -94,7 +94,7 @@ public class myftp {
                 new BufferedReader(
                     new InputStreamReader(myftpSocket.getInputStream()));
         		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-        				myftpSocket.getOutputStream()))
+        				myftpSocket.getOutputStream()));
             BufferedReader stdInput =
                 new BufferedReader(
                     new InputStreamReader(System.in));
