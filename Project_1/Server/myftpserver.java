@@ -28,6 +28,10 @@ public class myftpserver {
 		currentWorkingDirectory = System.getProperty("user.dir");
     };
     private boolean deleteFileFromServer(String fileName){
+    	Path pathToFile = Paths.get(fileName);
+		if (!pathToFile.isAbsolute()) {
+			fileName = currentWorkingDirectory + fileSeparator + fileName;
+		}
     	boolean success = false;
     	try{
     		File fe = new File(fileName);
