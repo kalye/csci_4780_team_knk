@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -136,17 +137,12 @@ public class myftpserver {
 				if(commands[0].equals("get"))
 				{
 					System.err.println("DEBUG: get command received ");
-					osToClient.write(convertFileToByteArray(commands[1]));
-					osToClient.flush();
+					sendFile(commands[1], writer);
 					System.out.println("File: " + commands[1] + " transfer complete");
 				}
 				else if(commands[0].equals("put"))
 				{
-					System.err.println("DEBUG: put command received ");
-					int maxFileSize = 1000*1024;
-					byte[] fileArray = new byte[maxFileSize];
-					inBuffFromClient.read(fileArray);
-					byteArrayToFile(commands[1],fileArray);
+					readFileFromClient(commands[1], inputFromClient, writer);
 					System.out.println("File: " + commands[1] + " saved to server successfully");
 				}
 				else if(commands[0].equals("delete"))
@@ -268,6 +264,85 @@ public class myftpserver {
 		} catch (Exception e) {
 			writer.write("error creating directory " + inputLine + ". Error is: " + e.getMessage());
 			writer.newLine();
+			writer.flush();
+		}
+	}
+    private void sendFile(String filename, BufferedWriter writer) throws IOException {
+		String originalname = filename;
+		try {
+			Path pathToFile = Paths.get(filename);
+			if (!pathToFile.isAbsolute()) {
+				filename = currentWorkingDirectory + fileSeparator + filename;
+			}
+			String line = null;
+			FileReader fileReader = new FileReader(filename);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			while((line = bufferedReader.readLine()) != null) {
+				writer.write(line.replaceAll("\\s", ""));
+				writer.newLine();
+				writer.flush();
+            } 
+			bufferedReader.close();
+			writer.write("Sending file " + originalname + " is successful.");
+			writer.newLine();
+			writer.flush();
+		} catch (IOException | NullPointerException e ) {
+			writer.write("Error reading file " + originalname + ". " + e.getMessage());
+			writer.newLine();
+			writer.flush();
+			System.out.println("Exception caught when trying to read file: " + writer);
+			System.out.println(e.getMessage());
+		} 
+
+	}
+    private void readFileFromClient(String filename, BufferedReader inputFromClient, BufferedWriter writer) throws IOException {
+		String orginalFileName = filename;
+		Path pathToFile = Paths.get(filename);
+		if (!pathToFile.isAbsolute()) {
+			filename = currentWorkingDirectory + fileSeparator + filename;
+		}
+		try{
+			FileOutputStream fos = null;
+			BufferedOutputStream bos = null;
+			File fe = new File(filename);
+			fe.createNewFile();
+			fos = new FileOutputStream(fe);
+			bos = new BufferedOutputStream(fos);
+			String line = null;
+			boolean success = true;
+			while((line = inputFromClient.readLine()) != null){
+				if(line.contains("Error reading file " + orginalFileName + ".") || line.contains("Sending file " + orginalFileName + " is successful")){
+					System.out.println(line);
+					if(line.contains("Error reading file " + orginalFileName + ".")){
+						success = false;
+					}
+					break;
+				}
+				bos.write(line.getBytes());
+			}
+			if(success){
+				System.out.println("File " + filename + " written to current working directory of client.");
+				writer.write("File " + orginalFileName + " saved to Server");
+				writer.newLine();;
+				writer.flush();
+			} else {
+				writer.write("Something went wrong while saving file " + orginalFileName + " to Server");
+				writer.newLine();;
+				writer.flush();
+			}
+			bos.flush();
+			bos.close();
+			fe = new File(filename);
+			if(fe.exists() && !success){
+				fe.delete();
+			}
+		}
+		catch(IOException e)
+		{
+		    System.err.println("There was an I/O error");
+		    System.err.println(e);
+		    writer.write("File " + orginalFileName + " saved to Server");
+			writer.newLine();;
 			writer.flush();
 		}
 	}

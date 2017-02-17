@@ -11,9 +11,11 @@
  */
 import java.io.*;
 import java.net.*;
+import java.nio.file.FileSystems;
 
 public class myftp {
 	private static final String PROMPT_MSG = "mytftp>";
+	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
     public myftp(){}
     
     private byte[] convertFileToByteArray(String fileName){
@@ -110,24 +112,13 @@ public class myftp {
                 commands = userInput.split(" ");
                 if(commands[0].equals("get"))
                 {
-                    int filesize = 1024*1000;
-                    byte[] fileArray = new byte[filesize];
-                    try{
-                        isFromServer.read(fileArray);
-                        byteArrayToFile(commands[1],fileArray);
-                        System.out.println("File: " + commands[1] + " saved to client successfully");
-
-                    }
-                    catch(IOException e)
-                    {
-                        System.err.println("There was an I/O error");
-                        System.err.println(e);
-                    }
+                    getFileFromServer(commands[1], inputFromServer);
                     //System.out.println("Success");
                 }
                 else if(commands[0].equals("put"))
                 {
-                    osBuffToServer.write(convertFileToByteArray(commands[1]));
+                	sendFileToRemoteServer(commands[1], writer, inputFromServer);
+                    //osBuffToServer.write(convertFileToByteArray(commands[1]));
 
                 }
                 else if(commands[0].equals("quit"))
@@ -154,6 +145,72 @@ public class myftp {
             System.exit(1);
         } 
     }
+
+	private void sendFileToRemoteServer(String filename, BufferedWriter writer, BufferedReader inputFromServer) throws IOException {
+		try {
+			String line = null;
+			FileReader fileReader = new FileReader(filename);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			while((line = bufferedReader.readLine()) != null) {
+				writer.write(line.replaceAll("\\s", ""));
+				writer.newLine();
+				writer.flush();
+            } 
+			bufferedReader.close();
+			writer.write("Sending file " + filename + " is successful.");
+			writer.newLine();
+			writer.flush();
+			System.out.println(inputFromServer.readLine());
+		} catch (IOException | NullPointerException e ) {
+			writer.write("Error reading file " + filename + ". " + e.getMessage());
+			System.out.println("Exception caught when trying to read file: " + writer);
+			System.out.println(e.getMessage());
+		} 
+		System.out.print(PROMPT_MSG);
+	}
+
+	private void getFileFromServer(String filename, BufferedReader inputFromServer) {
+		String orginalFileName = filename;
+		int lastindex = filename.lastIndexOf(fileSeparator);
+		if(lastindex > -1){
+			filename = filename.substring(lastindex + 1);
+		}
+		try{
+			FileOutputStream fos = null;
+			BufferedOutputStream bos = null;
+			File fe = new File(filename);
+			fe.createNewFile();
+			fos = new FileOutputStream(fe);
+			bos = new BufferedOutputStream(fos);
+			String line = null;
+			boolean success = true;
+			while((line = inputFromServer.readLine()) != null){
+				if(line.contains("Error reading file " + orginalFileName + ".") || line.contains("Sending file " + orginalFileName + " is successful")){
+					System.out.println(line);
+					if(line.contains("Error reading file " + orginalFileName + ".")){
+						success = false;
+					}
+					break;
+				}
+				bos.write(line.getBytes());
+			}
+			if(success){
+				System.out.println("File " + filename + " written to current working directory of client.");
+			}
+			bos.flush();
+			bos.close();
+			fe = new File(filename);
+			if(fe.exists() && !success){
+				fe.delete();
+			}
+			System.out.print(PROMPT_MSG);
+		}
+		catch(IOException e)
+		{
+		    System.err.println("There was an I/O error");
+		    System.err.println(e);
+		}
+	}
 	private void lsFileInRemoteServerDirectory(String userInput, BufferedWriter writer,
 			BufferedReader inputFromServer) throws IOException {
 		try {
