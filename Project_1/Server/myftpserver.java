@@ -194,6 +194,12 @@ public class myftpserver {
 	}
 }
     private void changeDirectory(String inputLine, Socket socket) throws IOException {
+    	if(inputLine.trim().equals("..")){
+    		int lastindex = currentWorkingDirectory.lastIndexOf(fileSeparator);
+    		if(lastindex > 0){
+    			inputLine = currentWorkingDirectory.substring(lastindex + 1);
+    		}
+    	}
 		Path newPath = Paths.get(inputLine);
 		if(!newPath.isAbsolute()){
 			newPath = Paths.get(currentWorkingDirectory, inputLine);
