@@ -201,7 +201,7 @@ public class myftpserver {
     	if(inputLine.trim().equals("..")){
     		int lastindex = currentWorkingDirectory.lastIndexOf(fileSeparator);
     		if(lastindex > 0){
-    			inputLine = currentWorkingDirectory.substring(lastindex + 1);
+    			inputLine = currentWorkingDirectory.replace(currentWorkingDirectory.substring(lastindex), "");
     		}
     	}
 		Path newPath = Paths.get(inputLine);
