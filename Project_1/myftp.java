@@ -132,6 +132,9 @@ public class myftp {
 				} else if(userInput.equals("pwd")){
 					System.out.println(inputFromServer.readLine());
 					System.out.print(PROMPT_MSG);
+				} else if(commands[0].equals("delete")){
+					System.out.println(inputFromServer.readLine());
+					System.out.print(PROMPT_MSG);
 				}
                 else
                     System.out.print(PROMPT_MSG);
