@@ -145,7 +145,6 @@ public class myftpserver {
 				}
 				else if(commands[0].equals("delete"))
 				{
-					System.err.println("DEBUG: delete command received ");
 					boolean success = deleteFileFromServer(commands[1]);
 					if(success)
 						System.out.println("File: " + commands[1] + " deleted successfully");
