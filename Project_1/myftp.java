@@ -88,8 +88,6 @@ public class myftp {
         //Resourse Statements closes all of these objects after the program closes 
         try (
             Socket myftpSocket = new Socket(hostName, portNumber);
-            BufferedInputStream isFromServer = new BufferedInputStream(myftpSocket.getInputStream());
-            BufferedOutputStream osBuffToServer = new BufferedOutputStream(myftpSocket.getOutputStream());
             PrintWriter outputToServer =
                 new PrintWriter(myftpSocket.getOutputStream(), true);
             BufferedReader inputFromServer =
@@ -136,8 +134,8 @@ public class myftp {
 					System.out.println(inputFromServer.readLine());
 					System.out.print(PROMPT_MSG);
 				}
-                else
-                    System.out.print(PROMPT_MSG);
+                // else
+                //     System.out.print(PROMPT_MSG);
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);

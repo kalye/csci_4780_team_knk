@@ -120,12 +120,8 @@ public class myftpserver {
 			Socket clientSocket = serverSocket.accept();
 			//Get input from client
 			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			//Output to Click with a buffer
-			BufferedOutputStream osToClient = new BufferedOutputStream(clientSocket.getOutputStream());
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 					clientSocket.getOutputStream()));
-			//Input from client as BufferedInputer 
-			BufferedInputStream inBuffFromClient= new BufferedInputStream(clientSocket.getInputStream());
 			)
 		{
 			
@@ -151,9 +147,19 @@ public class myftpserver {
 				{
 					boolean success = deleteFileFromServer(commands[1]);
 					if(success)
+					{
 						System.out.println("File: " + commands[1] + " deleted successfully");
+						writer.write("File: " + commands[1] + " deleted successfully");
+						writer.newLine();
+						writer.flush();
+					}
 					else
+					{
 						System.out.println("File: " + commands[1] + " wasn't deleted successfully");
+						writer.write("File: " + commands[1] + " wasn't deleted successfully");
+						writer.newLine();
+						writer.flush();	
+					}
 				}
 				else if(commands[0].equals( "ls"))
 				{
