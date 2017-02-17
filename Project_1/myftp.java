@@ -113,12 +113,10 @@ public class myftp {
                 if(commands[0].equals("get"))
                 {
                     getFileFromServer(commands[1], inputFromServer);
-                    //System.out.println("Success");
                 }
                 else if(commands[0].equals("put"))
                 {
                 	sendFileToRemoteServer(commands[1], writer, inputFromServer);
-                    //osBuffToServer.write(convertFileToByteArray(commands[1]));
 
                 }
                 else if(commands[0].equals("quit"))
@@ -135,6 +133,8 @@ public class myftp {
 					System.out.println(inputFromServer.readLine());
 					System.out.print(PROMPT_MSG);
 				}
+                else
+                    System.out.print(PROMPT_MSG);
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
