@@ -198,6 +198,10 @@ public class myftpserver {
 }
     private void changeDirectory(String inputLine, Socket socket) throws IOException {
 		Path newPath = Paths.get(inputLine);
+		Path newPath = Paths.get(inputLine);
+		if(!newPath.isAbsolute()){
+			newPath = Paths.get(currentWorkingDirectory, inputLine);
+		}
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 socket.getOutputStream()));
 		if (Files.exists(newPath)) {
