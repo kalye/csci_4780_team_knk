@@ -2,7 +2,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
+import java.io.*;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -46,8 +46,7 @@ public class myftpserver {
     	return success;
 		
     }
-    private byte[] convertFileToByteArray(String fileName){
-    	FileInputStream fis = null;
+    private void convertFileToByteArray(String fileName, DataOutputStream sStream){
     	BufferedInputStream bis = null;
     	byte[] fileArray = null;
     	try
@@ -55,16 +54,16 @@ public class myftpserver {
 
     	File fe = new File(fileName);
 		if(fe.canRead()){
-			fis = new FileInputStream(fe);
-			bis = new BufferedInputStream(fis);
+			bis = new BufferedInputStream(new FileInputStream(fe));
 			fileArray = new byte[(int)fe.length()];
 			bis.read(fileArray);
 		}
 		else
 			System.err.println("File: " + fe.getName() + " cannot be read");
-
-		fis.close();
 		bis.close();
+		sStream.writeLong(fe.length()); //Size of file
+		sStream.write(fileArray); //The file as a byte array
+		sStream.flush();
 	}
 	catch(IOException e)
 	{
@@ -77,22 +76,26 @@ public class myftpserver {
 		System.out.println(e.getMessage());
 	}
 	
-		return fileArray;
 
     }
 
-    private void byteArrayToFile(String fileName, byte[] fileArray){
+    private void byteArrayToFile(String fileName, DataInputStream cStream){
 
-    	
-    	FileOutputStream fos = null;
-    	BufferedOutputStream bos = null;
     	try {
+    		BufferedOutputStream bos = null;
+    		byte[] fileArray = new byte[8*1024];
     		File fe = new File(fileName);
     		fe.createNewFile();
-    		fos = new FileOutputStream(fe);
-    		bos = new BufferedOutputStream(fos);
-    		bos.write(fileArray);
-    		fos.close();
+    		long size = cStream.readLong();
+    		bos = new BufferedOutputStream(new FileOutputStream(fe));
+    		int bytesRead = 0;
+    		while(size >0)
+    		{
+    			bytesRead = cStream.read(fileArray, 0, fileArray.length);
+    			bos.write(fileArray);
+    			size -= bytesRead;
+    		}
+    		
     		bos.close();
     	}
     	catch(IOException e)

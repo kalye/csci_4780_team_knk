@@ -18,64 +18,68 @@ public class myftp {
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
     public myftp(){}
     
-    private byte[] convertFileToByteArray(String fileName){
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        byte[] fileArray = null;
-        try
-        {
+    private void convertFileToByteArray(String fileName, DataOutputStream sStream){
+    	BufferedInputStream bis = null;
+    	byte[] fileArray = null;
+    	try
+    	{
 
-        File fe = new File(fileName);
-        if(fe.canRead()){
-            fis = new FileInputStream(fe);
-            bis = new BufferedInputStream(fis);
-            fileArray = new byte[(int)fe.length()];
-            bis.read(fileArray);
-        }
-        else
-            System.err.println("File: " + fe.getName() + " cannot be read");
-
-        fis.close();
-        bis.close();
-    }
-    catch(IOException e)
-    {
-        System.out.println("Exception caught when trying to read file: " + fileName);
-        System.out.println(e.getMessage());
-    }
-    catch(NullPointerException e)
-    {
-        System.out.println("Exception caught when trying to read file: " + fileName);
-        System.out.println(e.getMessage());
-    }
-    
-        return fileArray;
+    	File fe = new File(fileName);
+		if(fe.canRead()){
+			bis = new BufferedInputStream(new FileInputStream(fe));
+			fileArray = new byte[(int)fe.length()];
+			bis.read(fileArray);
+		}
+		else
+			System.err.println("File: " + fe.getName() + " cannot be read");
+		bis.close();
+		sStream.writeLong(fe.length()); //Size of file
+		sStream.write(fileArray); //The file as a byte array
+		sStream.flush();
+	}
+	catch(IOException e)
+	{
+		System.out.println("Exception caught when trying to read file: " + fileName);
+		System.out.println(e.getMessage());
+	}
+	catch(NullPointerException e)
+	{
+		System.out.println("Exception caught when trying to read file: " + fileName);
+		System.out.println(e.getMessage());
+	}
+	
 
     }
-    private void byteArrayToFile(String fileName, byte[] fileArray){
 
-        
-        FileOutputStream fos = null;
-        BufferedOutputStream bos = null;
-        try {
-            File fe = new File(fileName);
-            fe.createNewFile();
-            fos = new FileOutputStream(fe);
-            bos = new BufferedOutputStream(fos);
-            bos.write(fileArray);
-            fos.close();
-            bos.close();
-        }
-        catch(IOException e)
-    {
-        System.out.println("Exception caught when trying to read file: " + fileName);
-        System.out.println(e.getMessage());
-    }
-    catch(NullPointerException e)
-    {
-        System.out.println("Exception caught when trying to read file: " + fileName);
-        System.out.println(e.getMessage());
-    }
+    private void byteArrayToFile(String fileName, DataInputStream cStream){
+
+    	try {
+    		BufferedOutputStream bos = null;
+    		byte[] fileArray = new byte[8*1024];
+    		File fe = new File(fileName);
+    		fe.createNewFile();
+    		long size = cStream.readLong();
+    		bos = new BufferedOutputStream(new FileOutputStream(fe));
+    		int bytesRead = 0;
+    		while(size >0)
+    		{
+    			bytesRead = cStream.read(fileArray, 0, fileArray.length);
+    			bos.write(fileArray);
+    			size -= bytesRead;
+    		}
+    		
+    		bos.close();
+    	}
+    	catch(IOException e)
+	{
+		System.out.println("Exception caught when trying to read file: " + fileName);
+		System.out.println(e.getMessage());
+	}
+	catch(NullPointerException e)
+	{
+		System.out.println("Exception caught when trying to read file: " + fileName);
+		System.out.println(e.getMessage());
+	}
 
     }
     public void createSocket(String hostName, int portNumber)
@@ -151,7 +155,7 @@ public class myftp {
 		try {
 			String line = null;
 			FileReader fileReader = new FileReader(filename);
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
 			while((line = bufferedReader.readLine()) != null) {
 				writer.write(line.replaceAll("\\s", ""));
 				writer.newLine();
