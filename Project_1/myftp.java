@@ -92,8 +92,8 @@ public class myftp {
         //Resourse Statements closes all of these objects after the program closes 
         try (
             Socket myftpSocket = new Socket(hostName, portNumber);
-            PrintWriter outputToServer =
-                new PrintWriter(myftpSocket.getOutputStream(), true);
+            DataInputStream inputDServer = new DataInputStream(myftpSocket.getInputStream());
+            DataOutputStream outputToServer = new DataOutputStream(myftpSocket.getOutputStream());
             BufferedReader inputFromServer =
                 new BufferedReader(
                     new InputStreamReader(myftpSocket.getInputStream()));
@@ -110,15 +110,20 @@ public class myftp {
 					continue;
 				} 
                 userInput = replacePrompt(userInput);
-                outputToServer.println(userInput);
+                outputToServer.writeUTF(userInput);
+                outputToServer.flush();
                 commands = userInput.split(" ");
                 if(commands[0].equals("get"))
                 {
-                    getFileFromServer(commands[1], inputFromServer);
+                	byteArrayToFile(commands[1], inputDServer);
+                	System.out.print(PROMPT_MSG);
+                    //getFileFromServer(commands[1], inputFromServer);
                 }
                 else if(commands[0].equals("put"))
                 {
-                	sendFileToRemoteServer(commands[1], writer, inputFromServer);
+                	convertFileToByteArray(commands[1], outputToServer);
+                	System.out.print(PROMPT_MSG);
+                	//sendFileToRemoteServer(commands[1], writer, inputFromServer);
 
                 }
                 else if(commands[0].equals("quit"))

@@ -123,6 +123,8 @@ public class myftpserver {
 			Socket clientSocket = serverSocket.accept();
 			//Get input from client
 			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			DataInputStream inputDClient = new DataInputStream(clientSocket.getInputStream());
+			DataOutputStream outputDClient = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 					clientSocket.getOutputStream()));
 			)
@@ -130,7 +132,7 @@ public class myftpserver {
 			
 			while(true)
 			{
-				inputFromClientS = inputFromClient.readLine();
+				inputFromClientS = inputDClient.readUTF();
 				if(inputFromClientS == null || inputFromClient.equals("")){
 					continue;
 				}
@@ -138,12 +140,14 @@ public class myftpserver {
 				if(commands[0].equals("get"))
 				{
 					System.err.println("DEBUG: get command received ");
-					sendFile(commands[1], writer);
+					//sendFile(commands[1], writer);
+					convertFileToByteArray(commands[1], outputDClient);
 					System.out.println("File: " + commands[1] + " transfer complete");
 				}
 				else if(commands[0].equals("put"))
 				{
-					readFileFromClient(commands[1], inputFromClient, writer);
+					byteArrayToFile(commands[1], inputDClient);
+					//readFileFromClient(commands[1], inputFromClient, writer);
 					System.out.println("File: " + commands[1] + " saved to server successfully");
 				}
 				else if(commands[0].equals("delete"))
