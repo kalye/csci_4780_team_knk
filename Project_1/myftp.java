@@ -20,7 +20,7 @@ public class myftp {
 	private String hostname = "";
     public myftp(){}
     
-    private void convertFileToByteArray(String fileName, DataOutputStream sStream){
+    private void sendFile(String fileName, DataOutputStream sStream){
     	BufferedInputStream bis = null;
     	byte[] fileArray = null;
     	try
@@ -53,7 +53,7 @@ public class myftp {
 
     }
 
-    private void byteArrayToFile(String fileName, DataInputStream cStream){
+    private void receiveFile(String fileName, DataInputStream cStream){
 
     	try {
     		BufferedOutputStream bos = null;
@@ -167,14 +167,14 @@ public class myftp {
 		if(commands[0].equals("get"))
 		{
 			System.out.print(inputFromServer.readLine());
-			byteArrayToFile(commands[1], inputDServer);
+			receiveFile(commands[1], inputDServer);
 			System.out.print(PROMPT_MSG);
 		    //getFileFromServer(commands[1], inputFromServer);
 		}
 		else if(commands[0].equals("put"))
 		{
 			System.out.print(inputFromServer.readLine());
-			convertFileToByteArray(commands[1], outputToServer);
+			sendFile(commands[1], outputToServer);
 			System.out.print(PROMPT_MSG);
 			//sendFileToRemoteServer(commands[1], writer, inputFromServer);
 

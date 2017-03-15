@@ -57,7 +57,7 @@ public class ClientRequestHandler extends Thread {
 					writer.flush();
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					// sendFile(commands[1], writer);
-					convertFileToByteArray(commands[1], outputDClient);
+					sendFile(commands[1], outputDClient);
 					System.out.println("File: " + commands[1] + " transfer complete");
 				} else if (commands[0].equals("put")) {
 					String commandId = "p_" + this.getId();
@@ -65,7 +65,7 @@ public class ClientRequestHandler extends Thread {
 					writer.newLine();
 					writer.flush();
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
-					byteArrayToFile(commands[1], inputDClient);
+					receiveFile(commands[1], inputDClient);
 					// readFileFromClient(commands[1], inputFromClient, writer);
 					System.out.println("File: " + commands[1] + " saved to server successfully");
 				} else if (commands[0].equals("delete")) {
@@ -203,11 +203,14 @@ public class ClientRequestHandler extends Thread {
 
 	}
 
-	private void convertFileToByteArray(String fileName, DataOutputStream sStream) {
+	private void sendFile(String fileName, DataOutputStream sStream) {
 		BufferedInputStream bis = null;
 		byte[] fileArray = null;
 		try {
-
+			if (!Paths.get(fileName).isAbsolute())
+			{
+				fileName = currentWorkingDirectory + fileSeparator + fileName;
+			}
 			File fe = new File(fileName);
 			if (fe.canRead()) {
 				bis = new BufferedInputStream(new FileInputStream(fe));
@@ -229,7 +232,7 @@ public class ClientRequestHandler extends Thread {
 
 	}
 
-	private void byteArrayToFile(String fileName, DataInputStream cStream) {
+	private void receiveFile(String fileName, DataInputStream cStream) {
 
 		try {
 			BufferedOutputStream bos = null;
