@@ -115,12 +115,16 @@ public class myftp {
 				} 
                 userInput = replacePrompt(userInput);
                 boolean multipleCommand = false;
+                //determine if the user request multiple command or not
                 if(userInput.contains(" & ")){
                 	multipleCommand = true;
                 }
+                //if it is multiple command execute the command in different thread
                 if(multipleCommand){
                 	executeMultipleCommand(userInput, inputDServer, outputToServer, inputFromServer, writer);
-                } else {
+                }
+                //execute the command in regular fashion
+                else {
                     executeSingleCommand(userInput, inputDServer, outputToServer, inputFromServer, writer);
                 }
                 
@@ -134,13 +138,18 @@ public class myftp {
             System.exit(1);
         } 
     }
-
+    //The method will execute the user command in multiple thread
 	private void executeMultipleCommand(String userInput, DataInputStream inputDServer, DataOutputStream outputToServer,
 			BufferedReader inputFromServer, BufferedWriter writer) {
+		//split the command by &. E.g get test.txt & cd= ['get test.txt', 'cd']
 		String[] commands = userInput.split("&");
+		//loop through the command and execute 
 		for(String cmd: commands){
+			//create annonymous/lambda thread and start is
+			//each command will be executed as separate thread without one waiting for another
 			new Thread(() ->{
 				try {
+					//handle the request. Determine which command need to be executed
 					executeSingleCommand(cmd, inputDServer, outputToServer, inputFromServer, writer);
 				} catch (IOException e) {
 					System.out.println("Exception caught while executing multiple command in executeMultipleCommand()");
@@ -151,7 +160,7 @@ public class myftp {
 		}
 		
 	}
-
+	//handle the request. Determine which command need to be executed
 	private void executeSingleCommand(String userInput, DataInputStream inputDServer,
 			DataOutputStream outputToServer, BufferedReader inputFromServer, BufferedWriter writer) throws IOException {
 		outputToServer.writeUTF(userInput);

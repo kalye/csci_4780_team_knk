@@ -17,25 +17,36 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-
+//This is the class that handle client communication/request per each connection
+//This class run as multiple thread-each client connection is handled by object of this class as different thread
 public class ClientRequestHandler extends Thread {
 
 	private String inputFromClientS;
 	private String commands[];
+	//used for holding the current directory-or used to simulate the current working directory of the server 
+	//each client may have different directory
 	private String currentWorkingDirectory;
 	private Socket socket;
+	//used for terminating the current put transfer of file
 	private boolean putTerminated = false;
+	//used for terminating the current get transfer of file
 	private boolean getTerminated = false;
+	//used for file separator character for different platform
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
+	//shared map used between different thread to hold get and put command id for later used to 
+	//distinguish which thread handled the get or put command
+	//put command begin with p_{threadId} while get g_{threadId}
 	public static final Map<String, ClientRequestHandler> TERMINATE_COMMAND_ID_CLIENT_THREAD = new HashMap<>();
 
 	public ClientRequestHandler(Socket socket) {
 		this.socket = socket;
+		//save the current working directory of server as soon as the clientHandler created
 		currentWorkingDirectory = System.getProperty("user.dir");
 	}
 
 	public void run() {
 		try {
+			//if the socket is alread closed exist
 			if (socket.isClosed()) {
 				System.exit(0);
 			}
@@ -51,19 +62,26 @@ public class ClientRequestHandler extends Thread {
 				commands = inputFromClientS.split(" ");
 				if (commands[0].equals("get")) {
 					System.err.println("DEBUG: get command received ");
+					//create get command id
 					String commandId = "g_" + this.getId();
+					//send get command id to the client
 					writer.write(commandId);
 					writer.newLine();
 					writer.flush();
+					//save get command id so that if later the client send terminate command we can use to tell which thread handled the get command
+					//and use it to set getTerminated. GetTerminated will be used to terminate get transfer
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					// sendFile(commands[1], writer);
 					convertFileToByteArray(commands[1], outputDClient);
 					System.out.println("File: " + commands[1] + " transfer complete");
 				} else if (commands[0].equals("put")) {
+					//create put command id
 					String commandId = "p_" + this.getId();
 					writer.write(commandId);
 					writer.newLine();
 					writer.flush();
+					//save put command id so that if later the client send terminate command we can use to tell which thread handled the put command
+					//and use it to set putTerminated. PutTerminated will be used to terminate put transfer
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					byteArrayToFile(commands[1], inputDClient);
 					// readFileFromClient(commands[1], inputFromClient, writer);
@@ -99,7 +117,10 @@ public class ClientRequestHandler extends Thread {
 					break;
 
 				} else if(commands[0].equals("terminate")){
+					//get the thread/ClientRequestHandler that first created from common map
 					ClientRequestHandler handler = TERMINATE_COMMAND_ID_CLIENT_THREAD.get(commands[1]);
+					//if there is already handler set the flag/getTerminated or putTerminated
+					//so that the ClientRequestHandler will terminate the get/put transfer
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
 					}
@@ -133,6 +154,7 @@ public class ClientRequestHandler extends Thread {
     private String pwd(){
     	return currentWorkingDirectory;
     }
+    //The method to set the putTerminated/getTerminated to true so that the clientRequestHandler will terminate the transfer
     public void setTerminatedFlag(String commandId){
     	if(commandId.startsWith("p")){
     		this.putTerminated = true;
