@@ -16,8 +16,6 @@ import java.nio.file.FileSystems;
 public class myftp {
 	private static final String PROMPT_MSG = "mytftp>";
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
-	private int terminatePort=0;
-	private String hostname = "";
     public myftp(){}
     
     private void convertFileToByteArray(String fileName, DataOutputStream sStream){
@@ -84,18 +82,16 @@ public class myftp {
 	}
 
     }
-    public void createSocket(String hostName, int nport, int tport)
+    public void createSocket(String hostName, int portNumber)
     {
 
-    	this.terminatePort = tport;
-    	this.hostname = hostName;
         //variables 
-        String userInput, serverInput;
+        String userInput, serverInput, commands[];
         File fe;
         
         //Resourse Statements closes all of these objects after the program closes 
         try (
-            Socket myftpSocket = new Socket(hostName, nport);
+            Socket myftpSocket = new Socket(hostName, portNumber);
             DataInputStream inputDServer = new DataInputStream(myftpSocket.getInputStream());
             DataOutputStream outputToServer = new DataOutputStream(myftpSocket.getOutputStream());
             BufferedReader inputFromServer =
@@ -114,16 +110,41 @@ public class myftp {
 					continue;
 				} 
                 userInput = replacePrompt(userInput);
-                boolean multipleCommand = false;
-                if(userInput.contains(" & ")){
-                	multipleCommand = true;
+                outputToServer.writeUTF(userInput);
+                outputToServer.flush();
+                commands = userInput.split(" ");
+                if(commands[0].equals("get"))
+                {
+                	byteArrayToFile(commands[1], inputDServer);
+                	System.out.print(PROMPT_MSG);
+                    //getFileFromServer(commands[1], inputFromServer);
                 }
-                if(multipleCommand){
-                	executeMultipleCommand(userInput, inputDServer, outputToServer, inputFromServer, writer);
-                } else {
-                    executeSingleCommand(userInput, inputDServer, outputToServer, inputFromServer, writer);
+                else if(commands[0].equals("put"))
+                {
+                	convertFileToByteArray(commands[1], outputToServer);
+                	System.out.print(PROMPT_MSG);
+                	//sendFileToRemoteServer(commands[1], writer, inputFromServer);
+
                 }
-                
+                else if(commands[0].equals("quit"))
+                {
+                    System.err.println("Socket Closed");
+                    System.exit(0);
+                } else if (userInput.contains("ls")) {
+					lsFileInRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if (userInput.contains("cd")) {
+					cdRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if (userInput.contains("mkdir")) {
+					mkdirRemoteServerDirectory(userInput, writer, inputFromServer);
+				} else if(userInput.equals("pwd")){
+					System.out.println(inputFromServer.readLine());
+					System.out.print(PROMPT_MSG);
+				} else if(commands[0].equals("delete")){
+					System.out.println(inputFromServer.readLine());
+					System.out.print(PROMPT_MSG);
+				}
+                // else
+                //     System.out.print(PROMPT_MSG);
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
@@ -134,86 +155,6 @@ public class myftp {
             System.exit(1);
         } 
     }
-
-	private void executeMultipleCommand(String userInput, DataInputStream inputDServer, DataOutputStream outputToServer,
-			BufferedReader inputFromServer, BufferedWriter writer) {
-		String[] commands = userInput.split("&");
-		for(String cmd: commands){
-			new Thread(() ->{
-				try {
-					executeSingleCommand(cmd, inputDServer, outputToServer, inputFromServer, writer);
-				} catch (IOException e) {
-					System.out.println("Exception caught while executing multiple command in executeMultipleCommand()");
-					System.out.println(e.getMessage());
-					e.printStackTrace();
-				}
-			}).start();;
-		}
-		
-	}
-
-	private void executeSingleCommand(String userInput, DataInputStream inputDServer,
-			DataOutputStream outputToServer, BufferedReader inputFromServer, BufferedWriter writer) throws IOException {
-		outputToServer.writeUTF(userInput);
-        outputToServer.flush();
-		String[] commands;
-		commands = userInput.split(" ");
-           
-		if(commands[0].equals("quit"))
-		{
-		    System.err.println("Socket Closed");
-		    System.exit(0);
-		} 
-		if(commands[0].equals("get"))
-		{
-			System.out.print(inputFromServer.readLine());
-			byteArrayToFile(commands[1], inputDServer);
-			System.out.print(PROMPT_MSG);
-		    //getFileFromServer(commands[1], inputFromServer);
-		}
-		else if(commands[0].equals("put"))
-		{
-			System.out.print(inputFromServer.readLine());
-			convertFileToByteArray(commands[1], outputToServer);
-			System.out.print(PROMPT_MSG);
-			//sendFileToRemoteServer(commands[1], writer, inputFromServer);
-
-		}
-		else if(commands[0].equals("quit"))
-		{
-		    System.err.println("Socket Closed");
-		    System.exit(0);
-		} else if (userInput.contains("ls")) {
-			lsFileInRemoteServerDirectory(userInput, writer, inputFromServer);
-		} else if (userInput.contains("cd")) {
-			cdRemoteServerDirectory(userInput, writer, inputFromServer);
-		} else if (userInput.contains("mkdir")) {
-			mkdirRemoteServerDirectory(userInput, writer, inputFromServer);
-		} else if(userInput.equals("pwd")){
-			System.out.println(inputFromServer.readLine());
-			System.out.print(PROMPT_MSG);
-		} else if(commands[0].equals("delete")){
-			System.out.println(inputFromServer.readLine());
-			System.out.print(PROMPT_MSG);
-		} else if(commands[0].equals("terminate")){
-			executeTerminateCommand(commands[1]);
-		}
-	}
-
-	private void executeTerminateCommand(String command_ID) {
-		 Socket myftpSocket;
-		try {
-			myftpSocket = new Socket(this.hostname, this.terminatePort);
-	         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-     				myftpSocket.getOutputStream()));
-	            writer.write(command_ID);
-				writer.newLine();
-				writer.flush();
-		} catch (IOException e) {
-			 System.err.println("Error executing terminate command " + command_ID + " .Error-" + e.getMessage());
-		}
-         
-	}
 
 	private void sendFileToRemoteServer(String filename, BufferedWriter writer, BufferedReader inputFromServer) throws IOException {
 		try {
@@ -335,12 +276,12 @@ public class myftp {
     public static void main(String args[])
     {
         //Making sure correct input is given by the user 
-        if (args.length != 3) {
-            System.err.println("Usage: java myftp <host name> normal port<nport>  and terminate port<tport>");
+        if (args.length != 2) {
+            System.err.println("Usage: java myftp <host name> <port number>");
             System.exit(1);
         }
 
         myftp mfp = new myftp();
-        mfp.createSocket(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+        mfp.createSocket(args[0], Integer.parseInt(args[1]));
     }
 }
