@@ -23,7 +23,7 @@ public class myftp {
     public myftp() {
     }
     
-    private void convertFileToByteArray(String fileName, DataOutputStream sStream) {
+    synchronized private void sendFile(String fileName, DataOutputStream sStream) {
         BufferedInputStream bis = null;
         byte[] fileArray = null;
         try {
@@ -53,7 +53,7 @@ public class myftp {
         
     }
     
-    private void byteArrayToFile(String fileName, DataInputStream cStream) {
+    private void receiveFile(String fileName, DataInputStream cStream) {
         
         try {
             BufferedOutputStream bos = null;
@@ -161,13 +161,13 @@ public class myftp {
         }
         if (commands[0].equals("get")) {
             System.out.print(inputFromServer.readLine());
-            byteArrayToFile(commands[1], inputDServer);
+            receiveFile(commands[1], inputDServer);
             //System.out.println();
             System.out.print(PROMPT_MSG);
             // getFileFromServer(commands[1], inputFromServer);
         } else if (commands[0].equals("put")) {
             System.out.print(inputFromServer.readLine());
-            convertFileToByteArray(commands[1], outputToServer);
+            sendFile(commands[1], outputToServer);
             //System.out.println();
             System.out.print(PROMPT_MSG);
             // sendFileToRemoteServer(commands[1], writer, inputFromServer);
@@ -206,72 +206,6 @@ public class myftp {
             System.err.println("Error executing terminate command " + command_ID + " .Error-" + e.getMessage());
         }
         
-    }
-    
-    private void sendFileToRemoteServer(String filename, BufferedWriter writer, BufferedReader inputFromServer)
-    throws IOException {
-        try {
-            String line = null;
-            FileReader fileReader = new FileReader(filename);
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
-            while ((line = bufferedReader.readLine()) != null) {
-                writer.write(line.replaceAll("\\s", ""));
-                writer.newLine();
-                writer.flush();
-            }
-            bufferedReader.close();
-            writer.write("Sending file " + filename + " is successful.");
-            writer.newLine();
-            writer.flush();
-            System.out.println(inputFromServer.readLine());
-        } catch (IOException | NullPointerException e) {
-            writer.write("Error reading file " + filename + ". " + e.getMessage());
-            System.out.println("Exception caught when trying to read file: " + writer);
-            System.out.println(e.getMessage());
-        }
-        System.out.print(PROMPT_MSG);
-    }
-    
-    private void getFileFromServer(String filename, BufferedReader inputFromServer) {
-        String orginalFileName = filename;
-        int lastindex = filename.lastIndexOf(fileSeparator);
-        if (lastindex > -1) {
-            filename = filename.substring(lastindex + 1);
-        }
-        try {
-            FileOutputStream fos = null;
-            BufferedOutputStream bos = null;
-            File fe = new File(filename);
-            fe.createNewFile();
-            fos = new FileOutputStream(fe);
-            bos = new BufferedOutputStream(fos);
-            String line = null;
-            boolean success = true;
-            while ((line = inputFromServer.readLine()) != null) {
-                if (line.contains("Error reading file " + orginalFileName + ".")
-                    || line.contains("Sending file " + orginalFileName + " is successful")) {
-                    System.out.println(line);
-                    if (line.contains("Error reading file " + orginalFileName + ".")) {
-                        success = false;
-                    }
-                    break;
-                }
-                bos.write(line.getBytes());
-            }
-            if (success) {
-                System.out.println("File " + filename + " written to current working directory of client.");
-            }
-            bos.flush();
-            bos.close();
-            fe = new File(filename);
-            if (fe.exists() && !success) {
-                fe.delete();
-            }
-            System.out.print(PROMPT_MSG);
-        } catch (IOException e) {
-            System.err.println("There was an I/O error");
-            System.err.println(e);
-        }
     }
     
     private void lsFileInRemoteServerDirectory(String userInput, BufferedWriter writer, BufferedReader inputFromServer)

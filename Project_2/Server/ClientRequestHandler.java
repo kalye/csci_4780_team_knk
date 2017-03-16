@@ -29,6 +29,7 @@ public class ClientRequestHandler extends Thread {
 	private static String tFileName;
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
 	public static final Map<String, ClientRequestHandler> TERMINATE_COMMAND_ID_CLIENT_THREAD = new HashMap<>();
+	//public ReentrantReadWriteLock
 
 	public ClientRequestHandler(Socket socket) {
 		this.socket = socket;
@@ -103,8 +104,8 @@ public class ClientRequestHandler extends Thread {
 					ClientRequestHandler handler = TERMINATE_COMMAND_ID_CLIENT_THREAD.get(commands[1]);
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
-						File fe = new File(tFileName);
-						fe.delete();
+						// File fe = new File(tFileName);
+						// fe.delete();
 						System.err.println("DEBUG: transfer command received ");
 						writer.write("File: " + tFileName + " interrupted successfully and deleted");
 						writer.newLine();
@@ -271,6 +272,7 @@ public class ClientRequestHandler extends Thread {
 	}
 
 	private boolean deleteFileFromServer(String fileName) {
+		//while ()
 		Path pathToFile = Paths.get(fileName);
 		if (!pathToFile.isAbsolute()) {
 			fileName = currentWorkingDirectory + fileSeparator + fileName;
