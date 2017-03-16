@@ -189,6 +189,8 @@ public class myftp {
             System.out.print(PROMPT_MSG);
         } else if (commands[0].equals("terminate")) {
             executeTerminateCommand(commands[1]);
+            System.out.println(inputFromServer.readLine());
+            System.out.print(PROMPT_MSG);
         }
     }
     

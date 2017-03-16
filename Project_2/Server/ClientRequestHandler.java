@@ -105,6 +105,10 @@ public class ClientRequestHandler extends Thread {
 						handler.setTerminatedFlag(commands[1]);
 						File fe = new File(tFileName);
 						fe.delete();
+						System.err.println("DEBUG: transfer command received ");
+						writer.write("File: " + tFileName + " interrupted successfully and deleted");
+						writer.newLine();
+						writer.flush();
 					}
 				} else {
 					System.err.println("DEBUG: " + commands[0] + " is not a valid command");
