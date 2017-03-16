@@ -26,6 +26,7 @@ public class ClientRequestHandler extends Thread {
 	private Socket socket;
 	private boolean putTerminated = false;
 	private boolean getTerminated = false;
+	private static String tFileName;
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
 	public static final Map<String, ClientRequestHandler> TERMINATE_COMMAND_ID_CLIENT_THREAD = new HashMap<>();
 
@@ -52,21 +53,21 @@ public class ClientRequestHandler extends Thread {
 				if (commands[0].equals("get")) {
 					System.err.println("DEBUG: get command received ");
 					String commandId = "g_" + this.getId();
+					tFileName = commands[1];
 					writer.write(commandId);
 					writer.newLine();
 					writer.flush();
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
-					// sendFile(commands[1], writer);
 					sendFile(commands[1], outputDClient);
 					System.out.println("File: " + commands[1] + " transfer complete");
 				} else if (commands[0].equals("put")) {
 					String commandId = "p_" + this.getId();
+					tFileName = commands[1];
 					writer.write(commandId);
 					writer.newLine();
 					writer.flush();
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					receiveFile(commands[1], inputDClient);
-					// readFileFromClient(commands[1], inputFromClient, writer);
 					System.out.println("File: " + commands[1] + " saved to server successfully");
 				} else if (commands[0].equals("delete")) {
 					boolean success = deleteFileFromServer(commands[1]);
@@ -102,6 +103,8 @@ public class ClientRequestHandler extends Thread {
 					ClientRequestHandler handler = TERMINATE_COMMAND_ID_CLIENT_THREAD.get(commands[1]);
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
+						File fe = new File(tFileName);
+						fe.delete();
 					}
 				} else {
 					System.err.println("DEBUG: " + commands[0] + " is not a valid command");
@@ -217,7 +220,11 @@ public class ClientRequestHandler extends Thread {
 				fileArray = new byte[(int) fe.length()];
 				bis.read(fileArray);
 			} else
+			{
 				System.err.println("File: " + fe.getName() + " cannot be read");
+				bis.close();
+				return;
+			}
 			bis.close();
 			sStream.writeLong(fe.length()); // Size of file
 			sStream.write(fileArray); // The file as a byte array

@@ -34,7 +34,11 @@ public class myftp {
                 fileArray = new byte[(int) fe.length()];
                 bis.read(fileArray);
             } else
+            {
                 System.err.println("File: " + fe.getName() + " cannot be read");
+                bis.close();
+                return;
+            }
             bis.close();
             sStream.writeLong(fe.length()); // Size of file
             sStream.write(fileArray); // The file as a byte array
@@ -158,11 +162,13 @@ public class myftp {
         if (commands[0].equals("get")) {
             System.out.print(inputFromServer.readLine());
             byteArrayToFile(commands[1], inputDServer);
+            //System.out.println();
             System.out.print(PROMPT_MSG);
             // getFileFromServer(commands[1], inputFromServer);
         } else if (commands[0].equals("put")) {
             System.out.print(inputFromServer.readLine());
             convertFileToByteArray(commands[1], outputToServer);
+            //System.out.println();
             System.out.print(PROMPT_MSG);
             // sendFileToRemoteServer(commands[1], writer, inputFromServer);
             
