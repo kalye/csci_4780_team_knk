@@ -12,6 +12,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.file.FileSystems;
+import java.util.concurrent.locks.*;
 
 public class myftp {
     private static final String PROMPT_MSG = "mytftp>";
@@ -19,6 +20,7 @@ public class myftp {
     private int terminatePort = 0;
     private String hostname = "";
     private int nport;
+    public static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
     public myftp() {
     }
@@ -26,6 +28,7 @@ public class myftp {
     synchronized private void sendFile(String fileName, DataOutputStream sStream) {
         BufferedInputStream bis = null;
         byte[] fileArray = null;
+        lock.writeLock().lock();
         try {
             
             File fe = new File(fileName);
@@ -50,11 +53,14 @@ public class myftp {
             System.out.println("Exception caught when trying to read file: " + fileName);
             System.out.println(e.getMessage());
         }
+        finally{
+            lock.writeLock().unlock();
+        }
         
     }
     
     private void receiveFile(String fileName, DataInputStream cStream) {
-        
+        lock.readLock().lock();
         try {
             BufferedOutputStream bos = null;
             byte[] fileArray = new byte[8 * 1024];
@@ -76,6 +82,9 @@ public class myftp {
         } catch (NullPointerException e) {
             System.out.println("Exception caught when trying to read file: " + fileName);
             System.out.println(e.getMessage());
+        }
+        finally{
+            lock.readLock().unlock();
         }
         
     }
@@ -154,23 +163,16 @@ public class myftp {
         outputToServer.flush();
         String[] commands;
         commands = userInput.split(" ");
-        
-        if (commands[0].equals("quit")) {
-            System.err.println("Socket Closed");
-            System.exit(0);
-        }
+
         if (commands[0].equals("get")) {
-            System.out.print(inputFromServer.readLine());
+            System.out.println(inputFromServer.readLine());
             receiveFile(commands[1], inputDServer);
-            //System.out.println();
             System.out.print(PROMPT_MSG);
-            // getFileFromServer(commands[1], inputFromServer);
         } else if (commands[0].equals("put")) {
-            System.out.print(inputFromServer.readLine());
+            
+            System.out.println(inputFromServer.readLine());
             sendFile(commands[1], outputToServer);
-            //System.out.println();
             System.out.print(PROMPT_MSG);
-            // sendFileToRemoteServer(commands[1], writer, inputFromServer);
             
         } else if (commands[0].equals("quit")) {
             System.err.println("Socket Closed");

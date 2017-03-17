@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.*;
 
 public class ClientRequestHandler extends Thread {
 
@@ -29,7 +30,7 @@ public class ClientRequestHandler extends Thread {
 	private static String tFileName;
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
 	public static final Map<String, ClientRequestHandler> TERMINATE_COMMAND_ID_CLIENT_THREAD = new HashMap<>();
-	//public ReentrantReadWriteLock
+	public static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	public ClientRequestHandler(Socket socket) {
 		this.socket = socket;
@@ -214,6 +215,7 @@ public class ClientRequestHandler extends Thread {
 	private void sendFile(String fileName, DataOutputStream sStream) {
 		BufferedInputStream bis = null;
 		byte[] fileArray = null;
+		lock.writeLock().lock();
 		try {
 			if (!Paths.get(fileName).isAbsolute())
 			{
@@ -241,11 +243,15 @@ public class ClientRequestHandler extends Thread {
 			System.out.println("Exception caught when trying to read file: " + fileName);
 			System.out.println(e.getMessage());
 		}
+		finally
+		{
+			lock.writeLock().unlock();
+		}
 
 	}
 
 	private void receiveFile(String fileName, DataInputStream cStream) {
-
+		lock.readLock().lock();
 		try {
 			BufferedOutputStream bos = null;
 			byte[] fileArray = new byte[8 * 1024];
@@ -268,11 +274,14 @@ public class ClientRequestHandler extends Thread {
 			System.out.println("Exception caught when trying to read file: " + fileName);
 			System.out.println(e.getMessage());
 		}
+		finally{
+			lock.readLock().unlock();
+		}
 
 	}
 
 	private boolean deleteFileFromServer(String fileName) {
-		//while ()
+		lock.writeLock().lock();
 		Path pathToFile = Paths.get(fileName);
 		if (!pathToFile.isAbsolute()) {
 			fileName = currentWorkingDirectory + fileSeparator + fileName;
@@ -284,6 +293,9 @@ public class ClientRequestHandler extends Thread {
 		} catch (SecurityException e) {
 			System.out.println("You can not delete file: " + fileName);
 			System.out.println(e.getMessage());
+		}
+		finally{
+			lock.writeLock().unlock();
 		}
 
 		return success;
