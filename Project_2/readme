@@ -1,14 +1,18 @@
-Project 1 
+Project 2
 Team 3
 A. Kosi, Kal, Nikko 
 B. No special instructions at this time 
 C. “This project was done in its entirety by <Project group members names>. We hereby state that we have not received unauthorized help of any form”. If this statement is not true, you should talk to me before submission.
 
 Compile Code:
+javac ClientRequestHandler.java
 javac myftpserver.java
 javac myftp.java 
 
 Run Code:
 
-java myftpserver <port number>
-java myftp <ip address> <port number>
+java myftpserver <nport number> <tport number>
+java myftp <ip address> <nport number> <tport number>
+
+Extra Instructions 
+Make sure that myftpserver and & ClientRequestHandler are in a separate directory together. 
