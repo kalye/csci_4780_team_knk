@@ -17,6 +17,7 @@ import java.util.concurrent.locks.*;
 public class myftp {
     private static final String PROMPT_MSG = "mytftp>";
     private static final String fileSeparator = FileSystems.getDefault().getSeparator();
+    private static String tFileName;
     private int terminatePort = 0;
     private String hostname = "";
     private int nport;
@@ -63,10 +64,11 @@ public class myftp {
         lock.readLock().lock();
         try {
             BufferedOutputStream bos = null;
-            byte[] fileArray = new byte[1024];
+            byte[] fileArray = new byte[8 * 1024];
             File fe = new File(fileName);
             fe.createNewFile();
             long size = cStream.readLong();
+            long oSize = size;
             bos = new BufferedOutputStream(new FileOutputStream(fe));
             int bytesRead = 0;
             while (size > 0) {
@@ -74,7 +76,15 @@ public class myftp {
                 bos.write(fileArray);
                 size -= bytesRead;
             }
-            
+            if(fe.length()<oSize)
+            {
+                System.out.println("TRUE");
+                fe.delete();
+            }
+            else
+            {
+                System.out.println("False");
+            }
             bos.close();
         } catch (IOException e) {
             System.out.println("Exception caught when trying to read file: " + fileName);
@@ -108,18 +118,25 @@ public class myftp {
              BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(myftpSocket.getOutputStream()));
              BufferedReader stdInput = new BufferedReader(new InputStreamReader(System.in));) {
             System.out.print(PROMPT_MSG);
+            boolean executedPrevious = false;
             while (true) {
                 userInput = stdInput.readLine();
                 if (userInput == null || "".equals(userInput)) {
                     continue;
                 }
+                userInput = userInput.trim();
                 userInput = replacePrompt(userInput);
                 boolean multipleCommand = false;
-                if (userInput.contains(" & ")) {
+                if (userInput.endsWith("&")) {
                     multipleCommand = true;
                 }
                 if (multipleCommand) {
                     executeMultipleCommand(userInput);
+                    executedPrevious = true;
+                    multipleCommand = false;
+                } else if(executedPrevious){
+                    executeMultipleCommand(userInput);
+                    executedPrevious = false;
                 } else {
                     executeSingleCommand(userInput, inputDServer, outputToServer, inputFromServer, writer);
                 }
@@ -137,6 +154,9 @@ public class myftp {
     private void executeMultipleCommand(String userInput) {
         String[] commands = userInput.split("&");
         for (String cmd : commands) {
+            if(cmd == null || "".equals(cmd.trim())){
+                continue;
+            }
             new Thread(() -> {
                 try {
                     Socket myftpSocket = new Socket(this.hostname, this.nport);
@@ -152,7 +172,6 @@ public class myftp {
                     e.printStackTrace();
                 }
             }).start();
-            ;
         }
         
     }
@@ -165,11 +184,12 @@ public class myftp {
         commands = userInput.split(" ");
 
         if (commands[0].equals("get")) {
+            tFileName = commands[1];
             System.out.println(inputFromServer.readLine());
             receiveFile(commands[1], inputDServer);
             System.out.print(PROMPT_MSG);
         } else if (commands[0].equals("put")) {
-            
+            tFileName = commands[1];
             System.out.println(inputFromServer.readLine());
             sendFile(commands[1], outputToServer);
             System.out.print(PROMPT_MSG);
@@ -177,11 +197,11 @@ public class myftp {
         } else if (commands[0].equals("quit")) {
             System.err.println("Socket Closed");
             System.exit(0);
-        } else if (commands[0].equals("ls")) {
+        } else if (commands[0].contains("ls")) {
             lsFileInRemoteServerDirectory(userInput, writer, inputFromServer);
-        } else if (commands[0].equals("cd")) {
+        } else if (commands[0].contains("cd")) {
             cdRemoteServerDirectory(userInput, writer, inputFromServer);
-        } else if (commands[0].equals("mkdir")) {
+        } else if (commands[0].contains("mkdir")) {
             mkdirRemoteServerDirectory(userInput, writer, inputFromServer);
         } else if (commands[0].equals("pwd")) {
             System.out.println(inputFromServer.readLine());

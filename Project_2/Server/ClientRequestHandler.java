@@ -105,19 +105,12 @@ public class ClientRequestHandler extends Thread {
 					ClientRequestHandler handler = TERMINATE_COMMAND_ID_CLIENT_THREAD.get(commands[1]);
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
-						boolean success = deleteFileFromServer(tFileName);
-					if (success) {
-						System.out.println("File: " + tFileName + " deleted successfully");
-						writer.write("File: " + tFileName + " deleted successfully");
-						writer.newLine();
-						writer.flush();
-					} else {
-						System.out.println("File: " + tFileName + " wasn't deleted successfully");
-						writer.write("File: " + tFileName + " wasn't deleted successfully");
-						writer.newLine();
-						writer.flush();
-					}
-						System.err.println("DEBUG: transfer command received ");
+						System.err.println("DEBUG: terminate command received ");
+						if(putTerminated)
+						{
+						File fe = new File(tFileName);
+						fe.delete();
+						}
 						writer.write("File: " + tFileName + " interrupted successfully and deleted");
 						writer.newLine();
 						writer.flush();
@@ -232,10 +225,23 @@ public class ClientRequestHandler extends Thread {
 				fileName = currentWorkingDirectory + fileSeparator + fileName;
 			}
 			File fe = new File(fileName);
+			long size = fe.length();
+			sStream.writeLong(fe.length()); // Size of file
+			int bytesRead = 0;
 			if (fe.canRead()) {
 				bis = new BufferedInputStream(new FileInputStream(fe));
-				fileArray = new byte[(int) fe.length()];
-				bis.read(fileArray);
+				fileArray = new byte[1024];
+				while (size >0)
+				{
+					bytesRead = bis.read(fileArray,0,fileArray.length);
+					sStream.write(fileArray);
+					sStream.flush();
+					size -= bytesRead;
+					if(getTerminated)
+					{
+						size = -1;
+					}
+				}
 			} else
 			{
 				System.err.println("File: " + fe.getName() + " cannot be read");
@@ -243,8 +249,6 @@ public class ClientRequestHandler extends Thread {
 				return;
 			}
 			bis.close();
-			sStream.writeLong(fe.length()); // Size of file
-			sStream.write(fileArray); // The file as a byte array
 			sStream.flush();
 		} catch (IOException e) {
 			System.out.println("Exception caught when trying to read file: " + fileName);
@@ -271,6 +275,12 @@ public class ClientRequestHandler extends Thread {
 			bos = new BufferedOutputStream(new FileOutputStream(fe));
 			int bytesRead = 0;
 			while (size > 0) {
+				if(putTerminated)
+				{
+					cStream.skipBytes((int)size);
+					size = -1;
+					//bos.flush();
+				}
 				bytesRead = cStream.read(fileArray, 0, fileArray.length);
 				bos.write(fileArray);
 				size -= bytesRead;
