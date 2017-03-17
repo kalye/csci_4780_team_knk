@@ -211,7 +211,9 @@ public class myftp {
             System.out.print(PROMPT_MSG);
         } else if (commands[0].equals("terminate")) {
             executeTerminateCommand(commands[1]);
-            System.out.println(inputFromServer.readLine());
+            tFileName = inputFromServer.readLine();
+            File fe = new File(tFileName);
+            fe.delete();
             System.out.print(PROMPT_MSG);
 
         }

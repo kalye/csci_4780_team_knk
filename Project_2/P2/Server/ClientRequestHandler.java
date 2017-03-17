@@ -109,19 +109,12 @@ public class ClientRequestHandler extends Thread {
 						System.err.println("DEBUG: terminate command received ");
 						if(putTerminated)
 						{
-							File fe = new File(tFileName);
-							fe.delete();
-							writer.write("");
-							writer.newLine();
-							writer.flush();
+						File fe = new File(tFileName);
+						fe.delete();
 						}
-						else if(getTerminated)
-						{
-							writer.write(tFileName);
-							writer.newLine();
-							writer.flush();
-						}
-						
+						writer.write("File: " + tFileName + " interrupted successfully and deleted");
+						writer.newLine();
+						writer.flush();
 					}
 				} else {
 					System.err.println("DEBUG: " + commands[0] + " is not a valid command");
