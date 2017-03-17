@@ -254,7 +254,7 @@ public class ClientRequestHandler extends Thread {
 		lock.readLock().lock();
 		try {
 			BufferedOutputStream bos = null;
-			byte[] fileArray = new byte[8 * 1024];
+			byte[] fileArray = new byte[1024];
 			File fe = new File(fileName);
 			fe.createNewFile();
 			long size = cStream.readLong();

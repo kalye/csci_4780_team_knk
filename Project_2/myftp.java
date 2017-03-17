@@ -63,7 +63,7 @@ public class myftp {
         lock.readLock().lock();
         try {
             BufferedOutputStream bos = null;
-            byte[] fileArray = new byte[8 * 1024];
+            byte[] fileArray = new byte[1024];
             File fe = new File(fileName);
             fe.createNewFile();
             long size = cStream.readLong();
@@ -145,7 +145,7 @@ public class myftp {
                     BufferedReader inputFromServer = new BufferedReader(
                                                                         new InputStreamReader(myftpSocket.getInputStream()));
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(myftpSocket.getOutputStream()));
-                    executeSingleCommand(cmd, inputDServer, outputToServer, inputFromServer, writer);
+                    executeSingleCommand(cmd.trim(), inputDServer, outputToServer, inputFromServer, writer);
                 } catch (IOException e) {
                     System.out.println("Exception caught while executing multiple command in executeMultipleCommand()");
                     System.out.println(e.getMessage());
@@ -159,7 +159,7 @@ public class myftp {
     
     private void executeSingleCommand(String userInput, DataInputStream inputDServer, DataOutputStream outputToServer,
                                       BufferedReader inputFromServer, BufferedWriter writer) throws IOException {
-        outputToServer.writeUTF(userInput);
+        outputToServer.writeUTF(userInput.trim());
         outputToServer.flush();
         String[] commands;
         commands = userInput.split(" ");
@@ -177,13 +177,13 @@ public class myftp {
         } else if (commands[0].equals("quit")) {
             System.err.println("Socket Closed");
             System.exit(0);
-        } else if (userInput.contains("ls")) {
+        } else if (commands[0].equals("ls")) {
             lsFileInRemoteServerDirectory(userInput, writer, inputFromServer);
-        } else if (userInput.contains("cd")) {
+        } else if (commands[0].equals("cd")) {
             cdRemoteServerDirectory(userInput, writer, inputFromServer);
-        } else if (userInput.contains("mkdir")) {
+        } else if (commands[0].equals("mkdir")) {
             mkdirRemoteServerDirectory(userInput, writer, inputFromServer);
-        } else if (userInput.equals("pwd")) {
+        } else if (commands[0].equals("pwd")) {
             System.out.println(inputFromServer.readLine());
             System.out.print(PROMPT_MSG);
         } else if (commands[0].equals("delete")) {
