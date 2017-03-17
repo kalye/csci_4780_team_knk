@@ -62,7 +62,7 @@ public class ClientRequestHandler extends Thread {
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					sendFile(commands[1], outputDClient);
 					if(!getTerminated)
-					System.out.println("File: " + commands[1] + " transfer complete");
+						System.out.println("File: " + commands[1] + " transfer complete");
 				} else if (commands[0].equals("put")) {
 					String commandId = "p_" + this.getId();
 					tFileName = commands[1];
@@ -107,7 +107,7 @@ public class ClientRequestHandler extends Thread {
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
 						System.err.println("DEBUG: terminate command received ");
-						if(putTerminated)
+						if(commands[1].startsWith("p"))
 						{
 							File fe = new File(tFileName);
 							fe.delete();
@@ -115,7 +115,7 @@ public class ClientRequestHandler extends Thread {
 							writer.newLine();
 							writer.flush();
 						}
-						else if(getTerminated)
+						else if(commands[1].startsWith("g"))
 						{
 							writer.write(tFileName);
 							writer.newLine();

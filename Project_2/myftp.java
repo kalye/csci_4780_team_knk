@@ -26,7 +26,7 @@ public class myftp {
     public myftp() {
     }
     
-    synchronized private void sendFile(String fileName, DataOutputStream sStream) {
+    private void sendFile(String fileName, DataOutputStream sStream) {
         BufferedInputStream bis = null;
         byte[] fileArray = null;
         lock.writeLock().lock();
