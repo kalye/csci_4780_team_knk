@@ -105,8 +105,18 @@ public class ClientRequestHandler extends Thread {
 					ClientRequestHandler handler = TERMINATE_COMMAND_ID_CLIENT_THREAD.get(commands[1]);
 					if(handler != null){
 						handler.setTerminatedFlag(commands[1]);
-						// File fe = new File(tFileName);
-						// fe.delete();
+						boolean success = deleteFileFromServer(tFileName);
+					if (success) {
+						System.out.println("File: " + tFileName + " deleted successfully");
+						writer.write("File: " + tFileName + " deleted successfully");
+						writer.newLine();
+						writer.flush();
+					} else {
+						System.out.println("File: " + tFileName + " wasn't deleted successfully");
+						writer.write("File: " + tFileName + " wasn't deleted successfully");
+						writer.newLine();
+						writer.flush();
+					}
 						System.err.println("DEBUG: transfer command received ");
 						writer.write("File: " + tFileName + " interrupted successfully and deleted");
 						writer.newLine();
