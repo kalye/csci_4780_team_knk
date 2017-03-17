@@ -61,6 +61,7 @@ public class ClientRequestHandler extends Thread {
 					writer.flush();
 					TERMINATE_COMMAND_ID_CLIENT_THREAD.put(commandId, this);
 					sendFile(commands[1], outputDClient);
+					if(!getTerminated)
 					System.out.println("File: " + commands[1] + " transfer complete");
 				} else if (commands[0].equals("put")) {
 					String commandId = "p_" + this.getId();

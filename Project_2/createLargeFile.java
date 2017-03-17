@@ -13,6 +13,7 @@ public class createLargeFile
 		byte[] fileArray = new byte[size];
 		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(fe));
 		bos.write(fileArray);
+		bos.write(fileArray);
 		bos.close();
 	}
 	catch (IOException e) {

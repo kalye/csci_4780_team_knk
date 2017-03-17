@@ -17,7 +17,7 @@ import java.util.concurrent.locks.*;
 public class myftp {
     private static final String PROMPT_MSG = "mytftp>";
     private static final String fileSeparator = FileSystems.getDefault().getSeparator();
-    private static String tFileName;
+    private static String tFileName = "";
     private int terminatePort = 0;
     private String hostname = "";
     private int nport;
@@ -33,10 +33,19 @@ public class myftp {
         try {
             
             File fe = new File(fileName);
+            long size = fe.length();
+            sStream.writeLong(fe.length()); // Size of file
+            int bytesRead = 0;
             if (fe.canRead()) {
                 bis = new BufferedInputStream(new FileInputStream(fe));
-                fileArray = new byte[(int) fe.length()];
-                bis.read(fileArray);
+                fileArray = new byte[1024];
+                while (size >0)
+                {
+                    bytesRead = bis.read(fileArray,0,fileArray.length);
+                    sStream.write(fileArray);
+                    sStream.flush();
+                    size -= bytesRead;
+                }
             } else
             {
                 System.err.println("File: " + fe.getName() + " cannot be read");
@@ -44,8 +53,6 @@ public class myftp {
                 return;
             }
             bis.close();
-            sStream.writeLong(fe.length()); // Size of file
-            sStream.write(fileArray); // The file as a byte array
             sStream.flush();
         } catch (IOException e) {
             System.out.println("Exception caught when trying to read file: " + fileName);
@@ -54,17 +61,18 @@ public class myftp {
             System.out.println("Exception caught when trying to read file: " + fileName);
             System.out.println(e.getMessage());
         }
-        finally{
+        finally
+        {
             lock.writeLock().unlock();
         }
-        
+
     }
     
     private void receiveFile(String fileName, DataInputStream cStream) {
         lock.readLock().lock();
         try {
             BufferedOutputStream bos = null;
-            byte[] fileArray = new byte[8 * 1024];
+            byte[] fileArray = new byte[1024];
             File fe = new File(fileName);
             fe.createNewFile();
             long size = cStream.readLong();
@@ -76,16 +84,8 @@ public class myftp {
                 bos.write(fileArray);
                 size -= bytesRead;
             }
-            if(fe.length()<oSize)
-            {
-                System.out.println("TRUE");
-                fe.delete();
-            }
-            else
-            {
-                System.out.println("False");
-            }
             bos.close();
+
         } catch (IOException e) {
             System.out.println("Exception caught when trying to read file: " + fileName);
             System.out.println(e.getMessage());
@@ -213,6 +213,7 @@ public class myftp {
             executeTerminateCommand(commands[1]);
             System.out.println(inputFromServer.readLine());
             System.out.print(PROMPT_MSG);
+
         }
     }
     
