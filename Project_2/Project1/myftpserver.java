@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class myftpserverp1 {
+public class myftpserver {
 	private String inputFromClientS;
 	private String commands[];
 	private String currentWorkingDirectory;

@@ -13,7 +13,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.FileSystems;
 
-public class myftpp1 {
+public class myftp {
 	private static final String PROMPT_MSG = "mytftp>";
 	private static final String fileSeparator = FileSystems.getDefault().getSeparator();
     public myftp(){}
