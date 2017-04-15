@@ -4,20 +4,26 @@ import java.net.*;
 import java.nio.file.FileSystems;
 import java.util.*;
 public class Participant {
-	int uniqueid;
-	
+	private static int ID;
+    private static int aport;
+    private static String hostName = null;
+    public static int bPort = 0;
+    private static File log = null;
+
+	public static void main(String[] args) {
+
+		readConfig(args[0]);
+		Thread threadA = new Thread(new ParticipantThreadA());
+		threadA.start();
+	}
+
 	public Participant() {
     }
-	    private static final String fileSeparator = FileSystems.getDefault().getSeparator();
-	    private static String tFileName = "";
-	    private int terminatePort = 0;
-	    private String hostname = "";
-	    private static int aport;
-	    public static String hostName = null;
-	    public static int bPort = 0;
+
+    	
 	    //public static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	    
-	    private static String[] readConfig(String fileName){
+	    private static void readConfig(String fileName){
 		String configCommands[] = new String[4];
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName))))
 		{
@@ -39,64 +45,30 @@ public class Participant {
 		catch(IOException ex){
 			System.out.println(ex + "IO Exception reading file");
 		}
+		ID = Integer.parseInt(configCommands[0]);
+		log = new File(configCommands[1]);
+		try{
+		if(!log.exists())
+		{
+			log.createNewFile();
+		}
+		}
+		catch (IOException e)
+		{
+			System.out.println(e + "error caught with file");
+		}
 		hostName = configCommands[2]; //Save them to the static variable hostname 
 		aport = Integer.parseInt(configCommands[3]); //Save them to the static variable port 
-		return configCommands;
-	}
-	    
-	    // public void createSocket(String hostName, int aport, int bport) {
-	        
-	    //     this.terminatePort = aport;
-	    //     this.hostname = hostName;
-	    //     this.aport = aport;
-	    //     // variables
-	    //     String userInput, serverInput;
-	    //     File fe;
-	        
-	    //     // Resourse Statements closes all of these objects after the program
-	    //     // closes
-	    //     try (Socket myftpSocket = new Socket(hostName, aport);
-	    //          DataInputStream inputDServer = new DataInputStream(myftpSocket.getInputStream());
-	    //          DataOutputStream outputToServer = new DataOutputStream(myftpSocket.getOutputStream());
-	    //          BufferedReader inputFromServer = new BufferedReader(
-	    //                                                              new InputStreamReader(myftpSocket.getInputStream()));
-	    //          BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(myftpSocket.getOutputStream()));
-	    //          BufferedReader stdInput = new BufferedReader(new InputStreamReader(System.in));) {
-	    //         System.out.print("Participant");
-     //            userInput = stdInput.readLine();
-
-	    //     } catch (UnknownHostException e) {
-	    //         System.err.println("Don't know about host " + hostName);
-	    //         System.exit(1);
-	    //     } catch (IOException e) {
-	    //         System.err.println("Couldn't get I/O for the connection to " + hostName);
-	    //         System.exit(1);
-	    //     }
-	    // }
-
-	    
-
-	    
-
-	    
+	}//End of read config
 	
 	
-	
-	public static void main(String[] args) {
-
-		String[] config = readConfig(args[0]);
-		
-		Thread threadA = new Thread(new ParticipantThreadA());
-		//Thread threadB = new Thread(new ParticipantThreadB());
-		threadA.start();
-		// threadB.start();
-	}
 
 final static class ParticipantThreadA implements Runnable
 {
 	String userInput, commands[];
 	public void run(){
 		try(Socket aSocket = new Socket(Participant.hostName,Participant.aport);
+			BufferedWriter writer4file = new BufferedWriter(new FileWriter(Participant.log, true));
 			DataOutputStream outputToServer = new DataOutputStream(aSocket.getOutputStream());
 			BufferedReader inputFromServer =
                 new BufferedReader(
@@ -120,22 +92,34 @@ final static class ParticipantThreadA implements Runnable
 				if(commands[0].equals("register"))
 				{
 					Thread threadB = new Thread(new ParticipantThreadB(Integer.parseInt(commands[1])));
+					threadB.start();
+					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.writeUTF(commands[1]);
+					outputToServer.writeUTF(Participant.hostName);
+					outputToServer.flush();
 				}
 				else if(commands[0].equals("deregister"))
 				{
-					//deregister();
+					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.flush();
 				}
 				else if(commands[0].equals("disconnect"))
 				{
-					//disconnect();
+					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.flush();
 				}
 				else if(commands[0].equals("reconnect"))
 				{
-					//reconnect();
+					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.flush();
 				}
-				else if(commands[0].equals("mSend"))
+				else if(commands[0].equals("msend"))
 				{
-					//mSend();
+					outputToServer.writeUTF(commands[1]);
+					writer4file.write(commands[1]);
+					writer4file.newLine();
+					writer4file.flush();
+					outputToServer.flush();
 				}
 			}
 		}
@@ -149,29 +133,11 @@ final static class ParticipantThreadA implements Runnable
 			System.out.println(e + "Exception caught when creating socket");
 		}
 	}
-	public void register(int portNumber){
-		
-	}
-	
-	public void deregister(){
-		
-	}
-	
-	public void disconnect(){
-		
-	}
-	
-	public void reconnect(int portNumber){
-		
-	}
-	
-	public void mSend(String message){
-		
-	}
-}
+} //End of Thread A
 
 final static class ParticipantThreadB implements Runnable
 {
+	String inputFromClientS, commands[];
 	int bport = 0;
 	public ParticipantThreadB(int port)
 	{
@@ -180,9 +146,29 @@ final static class ParticipantThreadB implements Runnable
 
 	public void run(){
 
-		 try(ServerSocket bServer = new ServerSocket(bport)){}
-		 
-		catch(UnknownHostException e)
+		 try(
+			//Open Socket
+			ServerSocket serverSocket = new ServerSocket(bport);
+			//Wait for connection 
+			Socket clientSocket = serverSocket.accept();
+			//Get input from client
+			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			DataInputStream inputDClient = new DataInputStream(clientSocket.getInputStream());
+			DataOutputStream outputDClient = new DataOutputStream(clientSocket.getOutputStream());
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+					clientSocket.getOutputStream()));
+			){
+		 	while(true)
+		 	{
+		 		inputFromClientS = inputDClient.readUTF();
+				System.out.println(inputFromClientS);
+				if(inputFromClientS == null || inputFromClient.equals("")){
+					continue;
+				}
+				commands = inputFromClientS.split(" ");
+		 	}
+		 }
+		 catch(UnknownHostException e)
 		{
 			System.out.println(e + "Exception caught when creating socket");
 		}
@@ -190,11 +176,14 @@ final static class ParticipantThreadB implements Runnable
 		{
 			System.out.println(e + "Exception caught when creating socket");
 		}
-	}
+
+		 }
+		 
+		
+}
 	
-}
+} //End of Program
 
 
 
 
-}
