@@ -17,11 +17,6 @@ public class Participant {
 		threadA.start();
 	}
 
-	public Participant() {
-    }
-
-    	
-	    //public static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	    
 	    private static void readConfig(String fileName){
 		String configCommands[] = new String[4];

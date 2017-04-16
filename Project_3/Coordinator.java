@@ -2,12 +2,33 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Hashtable;
+import java.util.Collection;
 public class Coordinator{
 	private static int port;
 	private static int time;
 	private String inputFromClientS;
 	private String commands[];
-	//private Hashtable ;
+	private static Hashtable<Integer, CoordinatorThreadA> Participants = new Hashtable<>();
+	
+	public static void main(String[] args)
+	{
+		readConfig(args[0]);
+		try(ServerSocket serverSocket = new ServerSocket(port);) //Listening
+		{
+			while (true) { //Continue listening with threads
+        	Socket sock = serverSocket.accept();
+        	new Thread(new CoordinatorThreadB(sock)).start();
+      		} //End of WHile 
+		} 
+		catch(IOException e)
+		{
+			System.out.println(e + "Error caught when starting connection with client");
+		}
+		
+		
+
+	}
+
 	private static void readConfig(String fileName){
 		String configCommands[] = new String[2];
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName))))
@@ -16,7 +37,6 @@ public class Coordinator{
 			int i = 0;
 			while(linef !=null){
 				configCommands[i] = linef;
-				//System.out.println(linef);
 				linef = br.readLine();
 				i++;
 			}
@@ -30,95 +50,132 @@ public class Coordinator{
 		}
 		port = Integer.parseInt(configCommands[0]);
 		time = Integer.parseInt(configCommands[1]);
-		//return configCommands;
 	}
 
-private void createServerSocket(int portNumber){
-    	while(true)
-    	{
-		try(
-			//Open Socket
-			ServerSocket serverSocket = new ServerSocket(portNumber);
-			//Wait for connection 
-			Socket clientSocket = serverSocket.accept();
-			//Get input from client
-			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+final static class CoordinatorThreadA implements Runnable
+{
+	String userInput, commands[], chostName;
+	int cport;
+	public DataOutputStream tempDOS;
+	public CoordinatorThreadA(String hostName, String port)
+	{
+		chostName = hostName;
+		cport = Integer.parseInt(port);
+	}
+	public void run(){
+		try(Socket aSocket = new Socket(chostName,cport);
+			//BufferedWriter writer4file = new BufferedWriter(new FileWriter(Participant.log, true));
+			DataOutputStream outputToServer = new DataOutputStream(aSocket.getOutputStream());
+			BufferedReader inputFromServer =
+                new BufferedReader(
+                    new InputStreamReader(aSocket.getInputStream()));
+            
+			 ) 
+		{
+			tempDOS = outputToServer;
+			while(true)
+			{
+				//userInput = stdInput.readLine();
+				if (userInput == null || "".equals(userInput)) {
+					continue;
+				} 
+				outputToServer.writeUTF(userInput);
+                outputToServer.flush();
+                commands = userInput.split(" ");
+				
+			}
+		}
+
+		catch(IOException e)
+		{
+			System.out.println(e + "Exception caught when creating socket");
+		}
+		
+	}//End of Run 
+	public void send(String message, DataOutputStream dos)
+	{
+		try{
+			dos.writeUTF("Ack: [" + message + "] " + "Received");
+			dos.flush();
+		}
+		catch(IOException e)
+		{
+			System.out.println(e + "Error caught trying to send message");
+		}
+		
+	}
+} //End of Thread A
+
+final static class CoordinatorThreadB implements Runnable
+{
+	Socket clientSocket;
+	String inputFromClientS, commands[];
+	int bport = 0;
+	public CoordinatorThreadB(Socket sock)
+	{
+		clientSocket = sock;
+	}
+
+	public void run(){
+
+		 try(
 			DataInputStream inputDClient = new DataInputStream(clientSocket.getInputStream());
 			DataOutputStream outputDClient = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 					clientSocket.getOutputStream()));
-			)
-		{
-			
-			while(true)
-			{
-				inputFromClientS = inputDClient.readUTF();
-				System.out.println(inputFromClientS);
-				if(inputFromClientS == null || inputFromClient.equals("")){
+			){
+
+		 	while(true) 
+		 	{
+		 		inputFromClientS = inputDClient.readUTF();
+				if(inputFromClientS == null ){
 					continue;
 				}
 				commands = inputFromClientS.split(" ");
-				if(commands[0].equals("get"))
-				{
-					System.err.println("DEBUG: get command received ");
-					
-					System.out.println("File: " + commands[1] + " transfer complete");
-				}
-				else if(commands[0].equals("register"))
+				if(commands[0].equals("register"))
 				{
 					String id = inputDClient.readUTF();
-					String portnum = inputDClient.readUTF();
-					String hostname = inputDClient.readUTF(); 
-					//System.out.println(one + " " + two + " " + three);
+					String port = inputDClient.readUTF();
+					String hostName = inputDClient.readUTF();
+					CoordinatorThreadA temp = new CoordinatorThreadA(hostName,port);
+					Thread thread = new Thread(temp);
+					Participants.put(Integer.parseInt(id),temp);
+					thread.start();
 				}
-				else if(commands[0].equals("delete"))
+				else if(commands[0].equals("deregister"))
 				{
 					
 				}
-				else if(commands[0].equals( "ls"))
+				else if(commands[0].equals("disconnect"))
 				{
 					
 				}
-				else if(commands[0].equals( "cd"))
-				{
-					
-					
-				}
-				else if(commands[0].equals( "mkdir"))
+				else if(commands[0].equals("reconnect"))
 				{
 					
 				}
-				else if(commands[0].equals( "pwd"))
+				else if(commands[0].equals("msend"))
 				{
-					
-					
+					System.out.println("["+commands[1]+"] " + " Send to all Participants");
+					Collection<CoordinatorThreadA> cta = Participants.values();
+					for(CoordinatorThreadA temp: cta)
+					{
+						temp.send(commands[1],temp.tempDOS);
+					}
 				}
-				else if(commands[0].equals( "quit"))
-				{
-					System.err.println("DEBUG: quit command received ");
-					clientSocket.close();
-					break;
-
-				}
-				
-			}
-			
-			
-		}
-		catch (IOException e) {
-            System.out.println("Exception caught when trying to listen on port " + portNumber + " or listening for a connection");
-            System.out.println(e.getMessage());
-        }
+		 	}
+		 }
+		 catch(IOException e)
+		 {
+		 	System.out.println(e + "Exception caught when listeing for clientsocket");
+		 }
 		
-	}
+
+		 }
+		 
+		
 }
 
-	public static void main(String[] args)
-	{
-		readConfig(args[0]);
-		Coordinator c = new Coordinator();
-		c.createServerSocket(port);
-
-	}
-}
+	
+} //End of Program 
 
