@@ -57,6 +57,7 @@ final static class CoordinatorThreadA implements Runnable
 	String userInput, commands[], chostName;
 	int cport;
 	public DataOutputStream tempDOS;
+	volatile boolean shutdown = false;
 	public CoordinatorThreadA(String hostName, String port)
 	{
 		chostName = hostName;
@@ -64,7 +65,6 @@ final static class CoordinatorThreadA implements Runnable
 	}
 	public void run(){
 		try(Socket aSocket = new Socket(chostName,cport);
-			//BufferedWriter writer4file = new BufferedWriter(new FileWriter(Participant.log, true));
 			DataOutputStream outputToServer = new DataOutputStream(aSocket.getOutputStream());
 			BufferedReader inputFromServer =
                 new BufferedReader(
@@ -75,13 +75,6 @@ final static class CoordinatorThreadA implements Runnable
 			tempDOS = outputToServer;
 			while(true)
 			{
-				//userInput = stdInput.readLine();
-				if (userInput == null || "".equals(userInput)) {
-					continue;
-				} 
-				outputToServer.writeUTF(userInput);
-                outputToServer.flush();
-                commands = userInput.split(" ");
 				
 			}
 		}
@@ -90,13 +83,25 @@ final static class CoordinatorThreadA implements Runnable
 		{
 			System.out.println(e + "Exception caught when creating socket");
 		}
+		finally
+		{
+			try{
+			tempDOS.close();}
+			catch(IOException e)
+			{
+				System.out.println(e + "Exception caught when closing stream");
+			}
+		}
 		
 	}//End of Run 
 	public void send(String message, DataOutputStream dos)
 	{
 		try{
+			if(!shutdown)
+			{
 			dos.writeUTF("Ack: [" + message + "] " + "Received");
 			dos.flush();
+			}
 		}
 		catch(IOException e)
 		{
@@ -144,15 +149,18 @@ final static class CoordinatorThreadB implements Runnable
 				}
 				else if(commands[0].equals("deregister"))
 				{
-					
+					int id = Integer.parseInt(inputDClient.readUTF());
+					Participants.get(id).shutdown = true;
 				}
 				else if(commands[0].equals("disconnect"))
 				{
-					
+					int id = Integer.parseInt(inputDClient.readUTF());
+					Participants.get(id).shutdown = true;
 				}
 				else if(commands[0].equals("reconnect"))
 				{
-					
+					int id = Integer.parseInt(inputDClient.readUTF());
+					Participants.get(id).shutdown = false;
 				}
 				else if(commands[0].equals("msend"))
 				{

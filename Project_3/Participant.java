@@ -157,10 +157,10 @@ final static class ParticipantThreadB implements Runnable
 		 	{
 		 		inputFromClientS = inputDClient.readUTF();
 				System.out.println(inputFromClientS);
-				if(inputFromClientS == null || inputFromClient.equals("")){
+				if(inputFromClientS == null){
 					continue;
 				}
-				commands = inputFromClientS.split(" ");
+				
 		 	}
 		 }
 		 catch(UnknownHostException e)
