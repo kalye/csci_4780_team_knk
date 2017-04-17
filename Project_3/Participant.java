@@ -92,6 +92,7 @@ final static class ParticipantThreadA implements Runnable
 					currentThreadB = tempThread;
 					Thread threadB = new Thread(tempThread);
 					threadB.start();
+					threadB.sleep(3);
 					outputToServer.writeUTF(Integer.toString(Participant.ID));
 					outputToServer.writeUTF(commands[1]);
 					outputToServer.writeUTF(Participant.hostName);
@@ -137,6 +138,10 @@ final static class ParticipantThreadA implements Runnable
 		catch(IOException e)
 		{
 			System.out.println(e + "Exception caught when creating socket");
+		}
+		catch(InterruptedException e)
+		{
+			System.out.println(e + "Exception caught while thread was sleeping" );
 		}
 	}
 } //End of Thread A

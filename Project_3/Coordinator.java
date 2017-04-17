@@ -86,6 +86,7 @@ final static class CoordinatorThreadA implements Runnable
 		{
 			System.out.println(e + "Exception caught when creating socket");
 		}
+
 		finally
 		{
 			try{
@@ -149,6 +150,7 @@ final static class CoordinatorThreadB implements Runnable
 					Thread thread = new Thread(temp);
 					Participants.put(Integer.parseInt(id),temp);
 					thread.start();
+					thread.sleep(3);
 				}
 				else if(commands[0].equals("deregister"))
 				{
