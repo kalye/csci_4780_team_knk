@@ -216,9 +216,6 @@ final static class CoordinatorThreadB implements Runnable
 		long timeFrame = tOfDisconnect + Coordinator.time;
 		if(tOReconnect < timeFrame)
 		{
-		System.out.println("Statement1");
-		System.out.println("Time Frame:" + timeFrame);
-		System.out.println("Reconnect Time: " + tOReconnect);
 
 		for(long temp: times)
 		{
@@ -232,10 +229,6 @@ final static class CoordinatorThreadB implements Runnable
 		else
 		{
 			long adjustedTimeFrame = tOfDisconnect + (tOReconnect-timeFrame);
-			System.out.println("Statement2");
-			System.out.println("Time Frame:" + adjustedTimeFrame);
-			System.out.println("Reconnect Time: " + tOReconnect);
-
 			for(long temp: times)
 			{
 			String message = AllMessages.get(temp);
