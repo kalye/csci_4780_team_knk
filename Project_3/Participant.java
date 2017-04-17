@@ -9,6 +9,7 @@ public class Participant {
     private static String hostName = null;
     public static int bPort = 0;
     private static File log = null;
+    private static ParticipantThreadB currentThreadB = null;
 
 	public static void main(String[] args) {
 
@@ -61,6 +62,7 @@ public class Participant {
 final static class ParticipantThreadA implements Runnable
 {
 	String userInput, commands[];
+	boolean offline = false;
 	public void run(){
 		try(Socket aSocket = new Socket(Participant.hostName,Participant.aport);
 			BufferedWriter writer4file = new BufferedWriter(new FileWriter(Participant.log, true));
@@ -86,7 +88,9 @@ final static class ParticipantThreadA implements Runnable
                 commands = userInput.split(" ");
 				if(commands[0].equals("register"))
 				{
-					Thread threadB = new Thread(new ParticipantThreadB(Integer.parseInt(commands[1])));
+					ParticipantThreadB tempThread = new ParticipantThreadB(Integer.parseInt(commands[1]));
+					currentThreadB = tempThread;
+					Thread threadB = new Thread(tempThread);
 					threadB.start();
 					outputToServer.writeUTF(Integer.toString(Participant.ID));
 					outputToServer.writeUTF(commands[1]);
@@ -97,23 +101,30 @@ final static class ParticipantThreadA implements Runnable
 				{
 					outputToServer.writeUTF(Integer.toString(Participant.ID));
 					outputToServer.flush();
+					currentThreadB.shutdown();
 				}
 				else if(commands[0].equals("disconnect"))
 				{
 					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.writeUTF(Long.toString(System.currentTimeMillis()));
 					outputToServer.flush();
+					currentThreadB.shutdown();
 				}
 				else if(commands[0].equals("reconnect"))
 				{
+					ParticipantThreadB tempThread = new ParticipantThreadB(Integer.parseInt(commands[1]));
+					currentThreadB = tempThread;
+					Thread threadB = new Thread(tempThread);
+					threadB.start();
 					outputToServer.writeUTF(Integer.toString(Participant.ID));
+					outputToServer.writeUTF(commands[1]);
+					outputToServer.writeUTF(Participant.hostName);
+					outputToServer.writeUTF(Long.toString(System.currentTimeMillis()));
 					outputToServer.flush();
 				}
 				else if(commands[0].equals("msend"))
 				{
 					outputToServer.writeUTF(commands[1]);
-					writer4file.write(commands[1]);
-					writer4file.newLine();
-					writer4file.flush();
 					outputToServer.flush();
 				}
 			}
@@ -134,29 +145,44 @@ final static class ParticipantThreadB implements Runnable
 {
 	String inputFromClientS, commands[];
 	int bport = 0;
+	volatile boolean shutdown = false;
+	ServerSocket serverSocket;
 	public ParticipantThreadB(int port)
 	{
 		bport = port;
 	}
 
 	public void run(){
+		
+		try
+		{
+		//Open Connection 
+		serverSocket = new ServerSocket(bport);
+		}
+		catch(IOException e)
+		{
+			System.out.println(e + "Error caught creating ThreadB socket");
+		}
 
 		 try(
-			//Open Socket
-			ServerSocket serverSocket = new ServerSocket(bport);
 			//Wait for connection 
 			Socket clientSocket = serverSocket.accept();
 			//Get input from client
 			BufferedReader inputFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			//Writer for file
+			BufferedWriter writer4file = new BufferedWriter(new FileWriter(Participant.log, true));
 			DataInputStream inputDClient = new DataInputStream(clientSocket.getInputStream());
 			DataOutputStream outputDClient = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 					clientSocket.getOutputStream()));
 			){
-		 	while(true)
+		 	while(!shutdown)
 		 	{
 		 		inputFromClientS = inputDClient.readUTF();
 				System.out.println(inputFromClientS);
+				writer4file.write(inputFromClientS);
+				writer4file.newLine();
+				writer4file.flush();
 				if(inputFromClientS == null){
 					continue;
 				}
@@ -171,8 +197,21 @@ final static class ParticipantThreadB implements Runnable
 		{
 			System.out.println(e + "Exception caught when creating socket");
 		}
+		finally{
+			try{serverSocket.close();}
+			catch(IOException e)
+			{
+				System.out.println(e + "Problem closing serverSocket");
+			}
+			
+		}
 
-		 }
+		 }//end of run
+
+	public void shutdown()throws IOException{
+		shutdown = true;
+		serverSocket.close();
+	}
 		 
 		
 }

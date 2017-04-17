@@ -3,12 +3,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Hashtable;
 import java.util.Collection;
+import java.util.Set;
 public class Coordinator{
 	private static int port;
-	private static int time;
+	private static long time;
 	private String inputFromClientS;
 	private String commands[];
 	private static Hashtable<Integer, CoordinatorThreadA> Participants = new Hashtable<>();
+	private static Hashtable<Long,String> AllMessages = new Hashtable<>();
+	private static Hashtable<Integer,Long> TimeOfDisconnect = new Hashtable<>();
 	
 	public static void main(String[] args)
 	{
@@ -49,7 +52,7 @@ public class Coordinator{
 			System.out.println(ex + "IO Exception reading file");
 		}
 		port = Integer.parseInt(configCommands[0]);
-		time = Integer.parseInt(configCommands[1]);
+		time = Long.parseLong(configCommands[1]) *1000;
 	}
 
 final static class CoordinatorThreadA implements Runnable
@@ -73,7 +76,7 @@ final static class CoordinatorThreadA implements Runnable
 			 ) 
 		{
 			tempDOS = outputToServer;
-			while(true)
+			while(!shutdown)
 			{
 				
 			}
@@ -97,17 +100,17 @@ final static class CoordinatorThreadA implements Runnable
 	public void send(String message, DataOutputStream dos)
 	{
 		try{
-			if(!shutdown)
-			{
 			dos.writeUTF("Ack: [" + message + "] " + "Received");
 			dos.flush();
-			}
 		}
 		catch(IOException e)
 		{
 			System.out.println(e + "Error caught trying to send message");
 		}
 		
+	}
+	public void shutdown(){
+		shutdown = true;
 	}
 } //End of Thread A
 
@@ -150,20 +153,33 @@ final static class CoordinatorThreadB implements Runnable
 				else if(commands[0].equals("deregister"))
 				{
 					int id = Integer.parseInt(inputDClient.readUTF());
-					Participants.get(id).shutdown = true;
+					Participants.remove(id);
+
 				}
 				else if(commands[0].equals("disconnect"))
 				{
 					int id = Integer.parseInt(inputDClient.readUTF());
-					Participants.get(id).shutdown = true;
+					long timeOfDisconnect = Long.parseLong(inputDClient.readUTF());
+					TimeOfDisconnect.put(id,timeOfDisconnect);
+					Participants.remove(id);
 				}
 				else if(commands[0].equals("reconnect"))
 				{
-					int id = Integer.parseInt(inputDClient.readUTF());
-					Participants.get(id).shutdown = false;
+					String id = inputDClient.readUTF();
+					String port = inputDClient.readUTF();
+					String hostName = inputDClient.readUTF();
+					long timeOfReconnect = Long.parseLong(inputDClient.readUTF());
+					CoordinatorThreadA temp = new CoordinatorThreadA(hostName,port);
+					Thread thread = new Thread(temp);
+					Participants.put(Integer.parseInt(id),temp);
+					thread.start();
+					thread.sleep(1);
+					reconnect(timeOfReconnect,Integer.parseInt(id),temp);
+
 				}
 				else if(commands[0].equals("msend"))
 				{
+					AllMessages.put(System.currentTimeMillis(),commands[1]);
 					System.out.println("["+commands[1]+"] " + " Send to all Participants");
 					Collection<CoordinatorThreadA> cta = Participants.values();
 					for(CoordinatorThreadA temp: cta)
@@ -171,15 +187,65 @@ final static class CoordinatorThreadB implements Runnable
 						temp.send(commands[1],temp.tempDOS);
 					}
 				}
+				else if(commands[0].equals("print"))
+				{
+					//All messages
+					Set set = AllMessages.entrySet();
+					// check set values
+   					System.out.println("Set values: " + set);
+					
+				}
 		 	}
 		 }
 		 catch(IOException e)
 		 {
 		 	System.out.println(e + "Exception caught when listeing for clientsocket");
 		 }
+		 catch(InterruptedException e)
+		 {
+		 	System.out.println(e + "Error caught while thread sleeping");
+		 }
 		
 
-		 }
+		 } //End of Run 
+
+	public void reconnect(long tOReconnect, int id, CoordinatorThreadA tempThread){
+		Set<Long> times = AllMessages.keySet();
+		long tOfDisconnect = TimeOfDisconnect.get(id);
+		//CoordinatorThreadA tempThread = Participants.get(id);
+		long timeFrame = tOfDisconnect + Coordinator.time;
+		if(tOReconnect < timeFrame)
+		{
+		System.out.println("Statement1");
+		System.out.println("Time Frame:" + timeFrame);
+		System.out.println("Reconnect Time: " + tOReconnect);
+
+		for(long temp: times)
+		{
+			String message = AllMessages.get(temp);
+			if(temp > tOfDisconnect)
+			{
+				tempThread.send(message,tempThread.tempDOS);
+			}
+		}//End of For
+		}//End of IF
+		else
+		{
+			long adjustedTimeFrame = tOfDisconnect + (tOReconnect-timeFrame);
+			System.out.println("Statement2");
+			System.out.println("Time Frame:" + adjustedTimeFrame);
+			System.out.println("Reconnect Time: " + tOReconnect);
+
+			for(long temp: times)
+			{
+			String message = AllMessages.get(temp);
+			if(temp > adjustedTimeFrame)
+			{
+				tempThread.send(message,tempThread.tempDOS);
+			}
+			}//End of For
+		}
+	}
 		 
 		
 }
