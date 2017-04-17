@@ -5,8 +5,10 @@ B. No special instructions at this time
 C. “This project was done in its entirety by <Project group members names>. We hereby state that we have not received unauthorized help of any form”. If this statement is not true, you should talk to me before submission.
 
 Compile Code:
+javac Coordinator.java
+javac Participant.java
 
 Run Code:
+java Coordinator
+java Participant
 
-
-Extra Instructions 
